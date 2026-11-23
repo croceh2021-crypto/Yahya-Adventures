@@ -1,0 +1,41 @@
+
+name: Build Yahya Adventures APK
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download project
+        uses: actions/checkout@v4
+
+      - name: Import Godot project
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/project" \
+            -w /project \
+            barichello/godot-ci:4.4.1 \
+            godot --headless --editor --path . --quit
+
+      - name: Export Android APK
+        run: |
+          mkdir -p build
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/project" \
+            -w /project \
+            barichello/godot-ci:4.4.1 \
+            godot --headless --path . \
+            --export-debug "Android" build/YahyaAdventures.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Yahya-Adventures-APK
+          path: build/YahyaAdventures.apk
