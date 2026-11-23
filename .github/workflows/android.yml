@@ -31,7 +31,7 @@ jobs:
             -o "$RUNNER_TEMP/templates.tpz"
           test -s "$RUNNER_TEMP/templates.tpz"
 
-      - name: Install templates and export APK
+      - name: Install SDK and export APK
         run: |
           mkdir -p build
 
@@ -48,7 +48,20 @@ jobs:
               test -x /usr/lib/android-sdk/platform-tools/adb
               test -s /root/debug.keystore
               test -s /root/.config/godot/editor_settings-4.4.tres
+              test -x /usr/lib/android-sdk/cmdline-tools/cmdline-tools/bin/sdkmanager
 
+              echo "Installing Android SDK requirements for Godot 4.4"
+              yes | sdkmanager --sdk_root=/usr/lib/android-sdk --licenses >/dev/null
+
+              yes | sdkmanager --sdk_root=/usr/lib/android-sdk \
+                "platform-tools" \
+                "build-tools;34.0.0" \
+                "platforms;android-34" \
+                "cmdline-tools;latest" \
+                "cmake;3.10.2.4988404" \
+                "ndk;23.2.8568313"
+
+              echo "Installing Godot export templates"
               mkdir -p /tmp/templates
               unzip -q /tmp/templates.tpz -d /tmp/templates
 
@@ -64,8 +77,10 @@ jobs:
               test -s "$DEST/android_debug.apk"
               test -s "$DEST/android_release.apk"
 
+              echo "Importing project"
               godot --headless --editor --path . --quit
 
+              echo "Exporting Android APK"
               godot --headless --verbose --path . \
                 --export-debug "Android" build/YahyaAdventures.apk
 
