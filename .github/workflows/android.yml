@@ -24,28 +24,27 @@ jobs:
             barichello/godot-ci:4.4.1 \
             godot --headless --editor --path . --quit
 
-      - name: Install Godot Export Templates and Export APK
+      - name: Download Godot Export Templates
+        run: |
+          curl -fL --retry 3 \
+            "https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_export_templates.tpz" \
+            -o "$RUNNER_TEMP/godot-4.4.1-templates.tpz"
+          test -s "$RUNNER_TEMP/godot-4.4.1-templates.tpz"
+
+      - name: Install Templates and Export APK
         run: |
           mkdir -p build
 
           docker run --rm \
             -v "$GITHUB_WORKSPACE:/project" \
+            -v "$RUNNER_TEMP/godot-4.4.1-templates.tpz:/tmp/godot-templates.tpz:ro" \
             -w /project \
             barichello/godot-ci:4.4.1 \
             bash -c '
               set -e
 
-              echo "===== DOWNLOAD GODOT 4.4.1 TEMPLATES ====="
-
-              mkdir -p /tmp/godot-templates
-              curl -fL \
-                "https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_export_templates.tpz" \
-                -o /tmp/godot-templates/templates.tpz
-
-              echo "===== EXTRACT TEMPLATES ====="
-
-              unzip -q /tmp/godot-templates/templates.tpz \
-                -d /tmp/godot-templates/extracted
+              mkdir -p /tmp/godot-templates/extracted
+              unzip -q /tmp/godot-templates.tpz -d /tmp/godot-templates/extracted
 
               TEMPLATE_SOURCE=$(find /tmp/godot-templates/extracted \
                 -name android_debug.apk -printf "%h\n" | head -n 1)
@@ -59,16 +58,14 @@ jobs:
               mkdir -p "$DEST"
               cp -a "$TEMPLATE_SOURCE/." "$DEST/"
 
-              echo "===== VERIFY TEMPLATES ====="
-              ls -lh "$DEST/android_debug.apk"
-              ls -lh "$DEST/android_release.apk"
-
-              echo "===== EXPORT APK ====="
+              test -s "$DEST/android_debug.apk"
+              test -s "$DEST/android_release.apk"
 
               godot --headless --verbose --path . \
                 --export-debug "Android" build/YahyaAdventures.apk
 
               test -s build/YahyaAdventures.apk
+              ls -lh build/YahyaAdventures.apk
             '
 
       - name: Upload APK
@@ -76,3 +73,4 @@ jobs:
         with:
           name: Yahya-Adventures-APK
           path: build/YahyaAdventures.apk
+          if-no-files-found: error
