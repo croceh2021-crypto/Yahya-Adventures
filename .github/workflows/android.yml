@@ -38,13 +38,20 @@ jobs:
               export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
               export ANDROID_HOME=/usr/lib/android-sdk
               export ANDROID_SDK_ROOT=/usr/lib/android-sdk
+
               export GODOT_ANDROID_KEYSTORE_DEBUG_PATH=/root/debug.keystore
-              export GODOT_ANDROID_KEYSTORE_DEBUG_USER=android
+              export GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey
               export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android
 
               test -x "$JAVA_HOME/bin/java"
               test -x "$ANDROID_HOME/platform-tools/adb"
               test -s /root/debug.keystore
+
+              echo "Checking debug keystore alias"
+              keytool -list \
+                -keystore /root/debug.keystore \
+                -storepass android \
+                -alias androiddebugkey
 
               SDKMANAGER=$(find /usr/lib/android-sdk -name sdkmanager -type f | head -n 1)
               test -n "$SDKMANAGER"
@@ -79,9 +86,9 @@ jobs:
 
               godot --headless --editor --path . --quit
 
-              echo "Checking generated Android settings"
+              echo "Checking Android SDK settings"
               grep -E "java_sdk_path|android_sdk_path" \
-                /root/.config/godot/editor_settings-4.4.tres || true
+                /root/.config/godot/editor_settings-4.4.tres
 
               echo "Exporting APK"
               godot --headless --verbose --path . \
