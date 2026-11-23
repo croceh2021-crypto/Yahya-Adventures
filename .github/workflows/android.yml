@@ -16,13 +16,29 @@ jobs:
       - name: Download project
         uses: actions/checkout@v4
 
-      - name: Import Godot project
+      - name: Check Godot and Android setup
         run: |
           docker run --rm \
             -v "$GITHUB_WORKSPACE:/project" \
             -w /project \
             barichello/godot-ci:4.4.1 \
-            godot --headless --editor --path . --quit
+            bash -c '
+              echo "===== GODOT VERSION ====="
+              godot --version
+
+              echo "===== JAVA VERSION ====="
+              java -version
+
+              echo "===== ANDROID SDK ====="
+              echo "$ANDROID_HOME"
+              ls "$ANDROID_HOME/build-tools"
+
+              echo "===== EXPORT TEMPLATES ====="
+              ls -la ~/.local/share/godot/export_templates/4.4.stable/
+
+              echo "===== PROJECT IMPORT ====="
+              godot --headless --editor --path . --quit --verbose
+            '
 
       - name: Export Android APK
         run: |
@@ -31,7 +47,7 @@ jobs:
             -v "$GITHUB_WORKSPACE:/project" \
             -w /project \
             barichello/godot-ci:4.4.1 \
-            godot --headless --path . \
+            godot --headless --verbose --path . \
             --export-debug "Android" build/YahyaAdventures.apk
 
       - name: Upload APK
