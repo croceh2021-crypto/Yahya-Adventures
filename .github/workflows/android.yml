@@ -16,14 +16,6 @@ jobs:
       - name: Download project
         uses: actions/checkout@v4
 
-      - name: Import Godot project
-        run: |
-          docker run --rm \
-            -v "$GITHUB_WORKSPACE:/project" \
-            -w /project \
-            barichello/godot-ci:4.4.1 \
-            godot --headless --editor --path . --quit
-
       - name: Download Godot Export Templates
         run: |
           curl -fL --retry 3 \
@@ -31,7 +23,7 @@ jobs:
             -o "$RUNNER_TEMP/templates.tpz"
           test -s "$RUNNER_TEMP/templates.tpz"
 
-      - name: Install SDK and export APK
+      - name: Configure Android and export APK
         run: |
           mkdir -p build
 
@@ -43,17 +35,24 @@ jobs:
             bash -c '
               set -eux
 
-              echo "Checking Android environment"
-              test -x /usr/lib/jvm/java-17-openjdk-amd64/bin/java
-              test -x /usr/lib/android-sdk/platform-tools/adb
+              export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+              export ANDROID_HOME=/usr/lib/android-sdk
+              export ANDROID_SDK_ROOT=/usr/lib/android-sdk
+              export GODOT_ANDROID_KEYSTORE_DEBUG_PATH=/root/debug.keystore
+              export GODOT_ANDROID_KEYSTORE_DEBUG_USER=android
+              export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android
+
+              test -x "$JAVA_HOME/bin/java"
+              test -x "$ANDROID_HOME/platform-tools/adb"
               test -s /root/debug.keystore
-              test -s /root/.config/godot/editor_settings-4.4.tres
-              test -x /usr/lib/android-sdk/cmdline-tools/cmdline-tools/bin/sdkmanager
 
-              echo "Installing Android SDK requirements for Godot 4.4"
-              yes | sdkmanager --sdk_root=/usr/lib/android-sdk --licenses >/dev/null
+              SDKMANAGER=$(find /usr/lib/android-sdk -name sdkmanager -type f | head -n 1)
+              test -n "$SDKMANAGER"
+              chmod +x "$SDKMANAGER"
 
-              yes | sdkmanager --sdk_root=/usr/lib/android-sdk \
+              yes | "$SDKMANAGER" --sdk_root="$ANDROID_HOME" --licenses || true
+
+              yes | "$SDKMANAGER" --sdk_root="$ANDROID_HOME" \
                 "platform-tools" \
                 "build-tools;34.0.0" \
                 "platforms;android-34" \
@@ -61,26 +60,30 @@ jobs:
                 "cmake;3.10.2.4988404" \
                 "ndk;23.2.8568313"
 
-              echo "Installing Godot export templates"
+              echo "Installing Godot templates"
               mkdir -p /tmp/templates
               unzip -q /tmp/templates.tpz -d /tmp/templates
 
-              SOURCE=$(find /tmp/templates \
-                -name android_debug.apk -printf "%h\n" | head -n 1)
-
+              SOURCE=$(find /tmp/templates -name android_debug.apk -printf "%h\n" | head -n 1)
               test -n "$SOURCE"
 
               DEST=/root/.local/share/godot/export_templates/4.4.1.stable
               mkdir -p "$DEST"
               cp -a "$SOURCE/." "$DEST/"
 
-              test -s "$DEST/android_debug.apk"
-              test -s "$DEST/android_release.apk"
+              mkdir -p /root/.android
+              cp /root/debug.keystore /root/.android/debug.keystore
 
-              echo "Importing project"
+              echo "Rebuilding Godot editor settings"
+              rm -f /root/.config/godot/editor_settings-4.4.tres
+
               godot --headless --editor --path . --quit
 
-              echo "Exporting Android APK"
+              echo "Checking generated Android settings"
+              grep -E "java_sdk_path|android_sdk_path" \
+                /root/.config/godot/editor_settings-4.4.tres || true
+
+              echo "Exporting APK"
               godot --headless --verbose --path . \
                 --export-debug "Android" build/YahyaAdventures.apk
 
