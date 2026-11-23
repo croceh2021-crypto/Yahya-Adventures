@@ -31,7 +31,7 @@ jobs:
             -o "$RUNNER_TEMP/godot-4.4.1-templates.tpz"
           test -s "$RUNNER_TEMP/godot-4.4.1-templates.tpz"
 
-      - name: Install Templates and Export APK
+      - name: Configure Android and Export APK
         run: |
           mkdir -p build
 
@@ -41,7 +41,29 @@ jobs:
             -w /project \
             barichello/godot-ci:4.4.1 \
             bash -c '
-              set -e
+              set -eux
+
+              export ANDROID_HOME=/usr/lib/android-sdk
+              export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+              export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/cmdline-tools/bin:$PATH"
+
+              test -x "$JAVA_HOME/bin/java"
+              test -x "$ANDROID_HOME/platform-tools/adb"
+              test -d "$ANDROID_HOME/platforms/android-33"
+              test -d "$ANDROID_HOME/build-tools/33.0.2"
+              test -s "$HOME/debug.keystore"
+
+              mkdir -p "$HOME/.config/godot"
+              cat > "$HOME/.config/godot/editor_settings-4.4.tres" <<EOF
+[gd_resource type="EditorSettings" format=3]
+
+[resource]
+export/android/java_sdk_path = "$JAVA_HOME"
+export/android/android_sdk_path = "$ANDROID_HOME"
+export/android/debug_keystore = "$HOME/debug.keystore"
+export/android/debug_keystore_user = "androiddebugkey"
+export/android/debug_keystore_pass = "android"
+EOF
 
               mkdir -p /tmp/godot-templates/extracted
               unzip -q /tmp/godot-templates.tpz -d /tmp/godot-templates/extracted
@@ -60,6 +82,12 @@ jobs:
 
               test -s "$DEST/android_debug.apk"
               test -s "$DEST/android_release.apk"
+
+              java -version
+              echo "ANDROID_HOME=$ANDROID_HOME"
+              echo "JAVA_HOME=$JAVA_HOME"
+
+              godot --headless --editor --path . --quit
 
               godot --headless --verbose --path . \
                 --export-debug "Android" build/YahyaAdventures.apk
