@@ -7,6 +7,7 @@ on:
       - main
       - yahya-3d-preview-test
       - fix/mobile-controls-main-scene-2026-11-25
+      - feature/100-realistic-3d-world-upgrades
 
   pull_request:
     branches:
