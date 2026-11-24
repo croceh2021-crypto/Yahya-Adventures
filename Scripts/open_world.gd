@@ -175,7 +175,7 @@ func _create_garden() -> void:
     _make_box("MainStoneWalkway", Vector3(4.0, 0.12, 88), Vector3(3.5, -0.015, -51), Color(0.65, 0.59, 0.49))
     for side in [-1.0, 1.0]:
         _make_box("PathEdge", Vector3(0.15, 0.14, 88), Vector3(3.5 + side * 2.08, 0.02, -51), Color(0.34, 0.31, 0.27))
-        var fx := side * 29.0
+        var fx: float = float(side) * 29.0
         _make_box("FenceRailUpper", Vector3(0.18, 0.18, 92), Vector3(fx, 1.0, -53), Color(0.36, 0.22, 0.12))
         _make_box("FenceRailLower", Vector3(0.18, 0.18, 92), Vector3(fx, 0.45, -53), Color(0.36, 0.22, 0.12))
         for z in range(-98, -8, 5):
