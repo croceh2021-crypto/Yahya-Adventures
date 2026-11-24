@@ -496,8 +496,9 @@ func _layout_garden_ui() -> void:
 
     var s := get_viewport().get_visible_rect().size
 
-    interact_button.position = Vector2(s.x - 142.0, s.y - 148.0)
-    interact_button.size = Vector2(116.0, 58.0)
+    # Use the shared responsive layout so this button never overlaps
+    # the movement D-pad, in either portrait or landscape orientation.
+    _fix_interaction_button_position()
     interact_button.visible = garden_active
 
     if is_instance_valid(garden_status_label):
