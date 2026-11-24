@@ -1,12 +1,13 @@
-
 extends Node3D
 
 # YAHYA ADVENTURES
-# First playable prototype - Godot 4
+# Character update: use Yahya's illustrated character sprite when the asset exists.
+# If the PNG is missing, the original simple 3D character remains as a fallback.
 
 const PLAYER_SPEED := 4.8
 const ROOM_LIMIT := 5.3
 const COIN_DISTANCE := 0.9
+const YAHYA_TEXTURE_PATH := "res://Assets/yahya_character.png"
 
 var player: Node3D
 var camera: Camera3D
@@ -84,16 +85,34 @@ func create_player() -> void:
     player.position = Vector3(0, 0, 3.8)
     add_child(player)
 
+    var yahya_texture := load(YAHYA_TEXTURE_PATH) as Texture2D
+    if yahya_texture != null:
+        var portrait := Sprite3D.new()
+        portrait.name = "YahyaCharacterSprite"
+        portrait.texture = yahya_texture
+        portrait.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
+        portrait.pixel_size = 0.00175
+        portrait.position = Vector3(0, 1.36, 0)
+        portrait.shaded = false
+        portrait.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
+        portrait.alpha_scissor_threshold = 0.15
+        portrait.double_sided = true
+        player.add_child(portrait)
+    else:
+        # Fallback: keep a visible 3D character if the image was not copied.
+        create_fallback_player()
+
+func create_fallback_player() -> void:
     var body := CapsuleMesh.new()
     body.radius = 0.38
     body.height = 1.25
     add_player_part(body, Vector3(0, 1.2, 0),
-        Color(0.9, 0.78, 0.65))
+        Color(0.96, 0.96, 0.94))
 
     var vest := BoxMesh.new()
     vest.size = Vector3(0.8, 0.7, 0.3)
     add_player_part(vest, Vector3(0, 1.25, -0.18),
-        Color(0.35, 0.55, 0.75))
+        Color(0.48, 0.49, 0.52))
 
     var head := SphereMesh.new()
     head.radius = 0.38
@@ -109,7 +128,6 @@ func create_player() -> void:
 
     var leg_mesh := BoxMesh.new()
     leg_mesh.size = Vector3(0.22, 0.65, 0.25)
-
     add_player_part(leg_mesh, Vector3(-0.17, 0.35, 0),
         Color(0.12, 0.12, 0.16))
     add_player_part(leg_mesh, Vector3(0.17, 0.35, 0),
@@ -124,7 +142,6 @@ func add_player_part(mesh: Mesh, pos: Vector3,
     var material := StandardMaterial3D.new()
     material.albedo_color = color
     part.material_override = material
-
     player.add_child(part)
 
 func create_camera() -> void:
@@ -137,62 +154,48 @@ func create_camera() -> void:
 func follow_camera() -> void:
     if not is_instance_valid(player):
         return
-
     camera.position = player.global_position + Vector3(0, 6.8, 8.5)
     camera.look_at(player.global_position + Vector3(0, 1, 0))
 
 func move_player(delta: float) -> void:
     var direction := Vector3(move_vector.x, 0, move_vector.y)
-
     if direction.length() > 1:
         direction = direction.normalized()
 
     player.position += direction * PLAYER_SPEED * delta
-
-    player.position.x = clampf(player.position.x,
-        -ROOM_LIMIT, ROOM_LIMIT)
-
-    player.position.z = clampf(player.position.z,
-        -ROOM_LIMIT, ROOM_LIMIT)
+    player.position.x = clampf(player.position.x, -ROOM_LIMIT, ROOM_LIMIT)
+    player.position.z = clampf(player.position.z, -ROOM_LIMIT, ROOM_LIMIT)
 
     if direction.length() > 0.05:
         player.rotation.y = atan2(-direction.x, -direction.z)
 
 func make_box(node_name: String, box_size: Vector3,
         pos: Vector3, color: Color) -> void:
-
     var item := MeshInstance3D.new()
     item.name = node_name
-
     var mesh := BoxMesh.new()
     mesh.size = box_size
     item.mesh = mesh
     item.position = pos
-
     var material := StandardMaterial3D.new()
     material.albedo_color = color
     item.material_override = material
-
     add_child(item)
 
 func add_coin(pos: Vector3) -> void:
     var coin := MeshInstance3D.new()
     coin.name = "GoldCoin"
-
     var mesh := CylinderMesh.new()
     mesh.top_radius = 0.32
     mesh.bottom_radius = 0.32
     mesh.height = 0.12
-
     coin.mesh = mesh
     coin.position = pos
     coin.rotation_degrees.x = 90
-
     var material := StandardMaterial3D.new()
     material.albedo_color = Color(1, 0.72, 0.05)
     material.metallic = 0.5
     coin.material_override = material
-
     add_child(coin)
     coins.append(coin)
 
@@ -207,27 +210,20 @@ func animate_coins(delta: float) -> void:
 func collect_coins() -> void:
     for i in range(coins.size() - 1, -1, -1):
         var coin := coins[i]
-
         if not is_instance_valid(coin):
             coins.remove_at(i)
             continue
-
-        if player.global_position.distance_to(
-                coin.global_position) < COIN_DISTANCE:
-
+        if player.global_position.distance_to(coin.global_position) < COIN_DISTANCE:
             coin_count += 1
             coin.queue_free()
             coins.remove_at(i)
-
             update_coin_label()
             message_label.text = "أحسنت! جمعت عملة ذهبية"
 
 func check_door() -> void:
     if door_open:
         return
-
     var door_position := Vector3(3.5, 0, -5.1)
-
     if player.global_position.distance_to(door_position) < 1.5:
         if coin_count >= 4:
             door_open = true
@@ -238,7 +234,6 @@ func check_door() -> void:
 func create_ui() -> void:
     var layer := CanvasLayer.new()
     add_child(layer)
-
     var root := Control.new()
     root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     layer.add_child(root)
@@ -247,8 +242,7 @@ func create_ui() -> void:
     title.text = "مغامرات يحيى"
     title.position = Vector2(25, 20)
     title.add_theme_font_size_override("font_size", 38)
-    title.add_theme_color_override("font_color",
-        Color(1, 0.82, 0.2))
+    title.add_theme_color_override("font_color", Color(1, 0.82, 0.2))
     root.add_child(title)
 
     coin_label = Label.new()
@@ -264,36 +258,27 @@ func create_ui() -> void:
     message_label.add_theme_color_override("font_color", Color.WHITE)
     root.add_child(message_label)
 
-    add_control_button(root, "◀", Vector2(25, -115),
-        Vector2(-1, 0))
-    add_control_button(root, "▶", Vector2(145, -115),
-        Vector2(1, 0))
-    add_control_button(root, "▲", Vector2(85, -180),
-        Vector2(0, -1))
-    add_control_button(root, "▼", Vector2(85, -48),
-        Vector2(0, 1))
+    add_control_button(root, "◀", Vector2(25, -115), Vector2(-1, 0))
+    add_control_button(root, "▶", Vector2(145, -115), Vector2(1, 0))
+    add_control_button(root, "▲", Vector2(85, -180), Vector2(0, -1))
+    add_control_button(root, "▼", Vector2(85, -48), Vector2(0, 1))
 
 func add_control_button(root: Control, caption: String,
         pos: Vector2, direction: Vector2) -> void:
-
     var button := Button.new()
     button.text = caption
     button.size = Vector2(100, 62)
-
     button.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
     button.position = pos
-
     button.add_theme_font_size_override("font_size", 30)
     root.add_child(button)
 
     button.button_down.connect(func():
         move_vector = direction
     )
-
     button.button_up.connect(func():
         move_vector = Vector2.ZERO
     )
-
     button.mouse_exited.connect(func():
         move_vector = Vector2.ZERO
     )
