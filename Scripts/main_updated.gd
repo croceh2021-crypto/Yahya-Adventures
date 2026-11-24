@@ -208,19 +208,59 @@ func _fix_interaction_button_position() -> void:
     if not is_instance_valid(responsive_root):
         return
 
+    var view_size := get_viewport().get_visible_rect().size
+
+    if view_size.x < 1.0 or view_size.y < 1.0:
+        return
+
     for child in responsive_root.get_children():
         if child is Button:
             var button := child as Button
 
             if button.text == "تفاعل":
-                var view_size := get_viewport().get_visible_rect().size
-
                 button.set_anchors_preset(Control.PRESET_TOP_LEFT)
                 button.size = Vector2(116.0, 58.0)
-                button.position = Vector2(
-                    (view_size.x - button.size.x) * 0.5,
-                    view_size.y - button.size.y - 18.0
-                )
+
+                var margin := UI_MARGIN
+                var gap := UI_GAP
+                var portrait := view_size.y > view_size.x
+
+                if portrait:
+                    # In portrait mode, keep interaction above the D-pad.
+                    # This leaves the lower-left area for sprint/jump and
+                    # prevents the interaction button from covering RIGHT.
+                    var dpad_size := clampf(
+                        minf(view_size.x * 0.075, view_size.y * 0.125),
+                        52.0, 76.0
+                    )
+
+                    var dpad_top := (
+                        view_size.y
+                        - margin
+                        - (3.0 * dpad_size)
+                        - (2.0 * gap)
+                    )
+
+                    var interaction_y := (
+                        dpad_top
+                        - gap
+                        - button.size.y
+                        - 10.0
+                    )
+
+                    button.position = Vector2(
+                        (view_size.x - button.size.x) * 0.5,
+                        maxf(margin + 12.0, interaction_y)
+                    )
+                else:
+                    # In landscape mode, the center-bottom position is
+                    # clear of both the left action buttons and right D-pad.
+                    button.position = Vector2(
+                        (view_size.x - button.size.x) * 0.5,
+                        view_size.y - button.size.y - margin
+                    )
+
+                button.z_index = 12
                 return
 
 
