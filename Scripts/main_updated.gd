@@ -1,7 +1,6 @@
-
 extends "res://Scripts/main.gd"
 
-# YAHYA ADVENTURES - FULL SCREEN & MOBILE UPDATE 4
+# YAHYA ADVENTURES - FULL SCREEN & MULTI-TOUCH UPDATE
 # Godot 4.4.1
 # Replace Scripts/main_updated.gd only.
 
@@ -24,6 +23,8 @@ var stamina_caption: Label
 
 var dpad_buttons: Array[Button] = []
 var pressed_directions: Array[Vector2] = []
+var touch_fingers: Dictionary = {}
+var mouse_sprint_requested := false
 
 var sprint_button: Button
 var jump_button: Button
@@ -50,12 +51,15 @@ var message_default := "اجمع العملات الذهبية الأربع ثم
 
 
 func _ready() -> void:
+    Input.set_emulate_mouse_from_touch(false)
     super._ready()
     _layout_responsive_ui()
     update_coin_label()
 
 
 func _process(delta: float) -> void:
+    _fix_interaction_button_position()
+
     if is_game_paused or level_complete:
         return
 
@@ -92,6 +96,122 @@ func _notification(what: int) -> void:
 
     if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
         _release_all_controls()
+
+
+# ============================================================
+# TRUE MULTI-TOUCH INPUT
+# ============================================================
+
+func _input(event: InputEvent) -> void:
+    if not (event is InputEventScreenTouch):
+        return
+
+    var touch := event as InputEventScreenTouch
+
+    if touch.pressed:
+        if touch_fingers.has(touch.index):
+            return
+
+        var target: Button = null
+
+        # When a menu is open, only its buttons can receive touches.
+        if is_instance_valid(complete_overlay) and complete_overlay.visible:
+            target = _find_touch_button(complete_overlay, touch.position)
+        elif is_instance_valid(pause_overlay) and pause_overlay.visible:
+            target = _find_touch_button(pause_overlay, touch.position)
+        else:
+            target = _find_touch_button(responsive_root, touch.position)
+
+        if is_instance_valid(target):
+            touch_fingers[touch.index] = target
+            _handle_touch_button(target, true)
+            get_viewport().set_input_as_handled()
+
+    else:
+        if touch_fingers.has(touch.index):
+            var target: Button = touch_fingers[touch.index]
+            touch_fingers.erase(touch.index)
+            _handle_touch_button(target, false)
+            get_viewport().set_input_as_handled()
+
+
+func _find_touch_button(node: Node, screen_position: Vector2) -> Button:
+    if not is_instance_valid(node):
+        return null
+
+    for i in range(node.get_child_count() - 1, -1, -1):
+        var found := _find_touch_button(
+            node.get_child(i),
+            screen_position
+        )
+
+        if is_instance_valid(found):
+            return found
+
+    if node is Button:
+        var button := node as Button
+
+        if button.visible and button.is_visible_in_tree() and not button.disabled:
+            if button.get_global_rect().has_point(screen_position):
+                return button
+
+    return null
+
+
+func _handle_touch_button(button: Button, is_down: bool) -> void:
+    if dpad_buttons.has(button):
+        _refresh_move_vector()
+        return
+
+    if button == sprint_button:
+        _refresh_sprint_request()
+        return
+
+    if not is_down:
+        return
+
+    if button == jump_button:
+        _try_jump()
+    elif button == pause_button:
+        _open_pause_menu()
+    elif button == zoom_in_button:
+        _zoom_camera_in()
+    elif button == zoom_out_button:
+        _zoom_camera_out()
+    else:
+        # Includes the garden interaction button and menu buttons.
+        button.pressed.emit()
+
+
+func _refresh_sprint_request() -> void:
+    var touch_sprint := false
+
+    for held_button in touch_fingers.values():
+        if held_button == sprint_button:
+            touch_sprint = true
+            break
+
+    sprint_requested = mouse_sprint_requested or touch_sprint
+
+
+func _fix_interaction_button_position() -> void:
+    if not is_instance_valid(responsive_root):
+        return
+
+    for child in responsive_root.get_children():
+        if child is Button:
+            var button := child as Button
+
+            if button.text == "تفاعل":
+                var view_size := get_viewport().get_visible_rect().size
+
+                button.set_anchors_preset(Control.PRESET_TOP_LEFT)
+                button.size = Vector2(116.0, 58.0)
+                button.position = Vector2(
+                    (view_size.x - button.size.x) * 0.5,
+                    view_size.y - button.size.y - 18.0
+                )
+                return
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -170,10 +290,14 @@ func create_ui() -> void:
 
     sprint_button = _make_action_button("ركض", 19)
     sprint_button.button_down.connect(
-        func(): sprint_requested = true
+        func():
+            mouse_sprint_requested = true
+            _refresh_sprint_request()
     )
     sprint_button.button_up.connect(
-        func(): sprint_requested = false
+        func():
+            mouse_sprint_requested = false
+            _refresh_sprint_request()
     )
     responsive_root.add_child(sprint_button)
 
@@ -448,12 +572,29 @@ func _layout_responsive_ui() -> void:
         view_size.x - margin - 44, 120
     )
 
+    _fix_interaction_button_position()
+
 
 func _refresh_move_vector() -> void:
     var combined := Vector2.ZERO
 
+    # Mouse / keyboard-style held directions.
     for direction in pressed_directions:
         combined += direction
+
+    # Independently held touch fingers.
+    var touch_directions := [
+        Vector2(0, -1),
+        Vector2(-1, 0),
+        Vector2(1, 0),
+        Vector2(0, 1)
+    ]
+
+    for held_button in touch_fingers.values():
+        var index := dpad_buttons.find(held_button)
+
+        if index >= 0 and index < touch_directions.size():
+            combined += touch_directions[index]
 
     move_vector = (
         combined.normalized()
@@ -463,8 +604,10 @@ func _refresh_move_vector() -> void:
 
 
 func _release_all_controls() -> void:
+    touch_fingers.clear()
     pressed_directions.clear()
     move_vector = Vector2.ZERO
+    mouse_sprint_requested = false
     sprint_requested = false
     sprint_enabled = false
 
