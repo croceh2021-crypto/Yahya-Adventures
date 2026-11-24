@@ -1,7 +1,7 @@
 
 extends Node3D
 
-# YAHYA ADVENTURES - TOUCH CONTROLS UPDATE
+# YAHYA ADVENTURES - CAMERA PERSPECTIVE UPDATE
 # Godot 4.4.1
 
 const PLAYER_SPEED := 4.8
@@ -10,8 +10,12 @@ const PLAYER_FRICTION := 20.0
 const ROOM_LIMIT := 5.25
 const COIN_DISTANCE := 0.95
 const YAHYA_TEXTURE_PATH := "res://Assets/yahya_character.png"
-const CAMERA_OFFSET := Vector3(0, 6.8, 8.5)
-const CAMERA_SMOOTHING := 7.0
+
+# CAMERA SETTINGS
+const CAMERA_OFFSET := Vector3(0, 5.3, 7.8)
+const CAMERA_SMOOTHING := 6.5
+const CAMERA_LOOK_AHEAD := 0.55
+const CAMERA_TARGET_HEIGHT := 1.15
 
 var player: Node3D
 var camera: Camera3D
@@ -425,12 +429,16 @@ func add_player_part(mesh: Mesh, pos: Vector3, color: Color) -> void:
     player.add_child(part)
 
 
-# CAMERA
+# CAMERA - IMPROVED THIRD PERSON PERSPECTIVE
 
 func create_camera() -> void:
     camera = Camera3D.new()
     camera.current = true
-    camera.fov = 62
+
+    camera.fov = 58.0
+    camera.near = 0.05
+    camera.far = 100.0
+
     camera.position = player.global_position + CAMERA_OFFSET
 
     add_child(camera)
@@ -441,15 +449,32 @@ func follow_camera(delta: float) -> void:
     if not is_instance_valid(player):
         return
 
+    # Smooth camera movement
     var target_position := player.global_position + CAMERA_OFFSET
     var weight := 1.0 - exp(-CAMERA_SMOOTHING * delta)
 
     camera.global_position = camera.global_position.lerp(
         target_position, weight)
 
-    camera.look_at(
-        player.global_position + Vector3(0, 1.0, 0),
-        Vector3.UP)
+    # Look ahead according to player movement
+    var movement_direction := Vector3(
+        move_velocity.x, 0.0, move_velocity.y)
+
+    var look_ahead := Vector3.ZERO
+
+    if movement_direction.length() > 0.05:
+        look_ahead = movement_direction.normalized() * CAMERA_LOOK_AHEAD
+
+    var look_target := player.global_position
+
+    look_target += Vector3(
+        0.0,
+        CAMERA_TARGET_HEIGHT,
+        0.0)
+
+    look_target += look_ahead
+
+    camera.look_at(look_target, Vector3.UP)
 
 
 # MOVEMENT
@@ -727,7 +752,7 @@ func create_ui() -> void:
 
     root.add_child(message_label)
 
-    # LARGE RIGHT-SIDE TOUCH CONTROLS
+    # TOUCH CONTROLS
 
     add_control_button(
         root, "◀", Vector2(-246, -128),
@@ -782,7 +807,7 @@ func add_control_button(
         "font_pressed_color",
         Color(1.0, 0.86, 0.35))
 
-    # NORMAL BUTTON STYLE
+    # NORMAL STYLE
 
     var normal_style := StyleBoxFlat.new()
 
