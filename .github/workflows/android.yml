@@ -19,6 +19,7 @@ jobs:
   build-android:
     name: Build Android APK
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Download project
@@ -35,7 +36,7 @@ jobs:
         run: |
           mkdir -p build
 
-          docker run --rm \
+          timeout 20m docker run --rm \
             -v "$GITHUB_WORKSPACE:/project" \
             -v "$RUNNER_TEMP/templates.tpz:/tmp/templates.tpz:ro" \
             -w /project \
