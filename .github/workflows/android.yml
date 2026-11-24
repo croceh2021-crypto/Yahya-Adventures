@@ -4,7 +4,8 @@ name: Build Yahya Adventures APK
 on:
   push:
     branches:
-      - main
+  - main
+  - yahya-3d-preview-test
   workflow_dispatch:
 
 jobs:
