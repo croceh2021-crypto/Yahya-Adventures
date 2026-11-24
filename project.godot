@@ -1,5 +1,4 @@
-
-; Yahya Adventures - Godot 4
+; Yahya Adventures - Godot 4.4.1
 config_version=5
 
 [application]
@@ -11,7 +10,7 @@ run/main_scene="res://Main.tscn"
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
-window/handheld/orientation=1
+window/handheld/orientation=4
 window/stretch/mode="canvas_items"
 
 [rendering]
