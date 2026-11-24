@@ -4,13 +4,6 @@ extends "res://Scripts/open_world.gd"
 # ============================================================
 # YAHYA ADVENTURES - ULTIMATE MENU UPDATE
 # Godot 4.4.1
-# Adds:
-# - Intro screen
-# - Character portrait
-# - Adventure guide with exactly 100 entries
-# - Achievement guide
-# - Touch-friendly interface
-# Existing open_world systems remain inherited.
 # ============================================================
 
 const HERO_IMAGE_PATH := "res://Assets/yahya_character.png"
@@ -32,6 +25,9 @@ var achievements_visible := false
 # ============================================================
 
 func _ready() -> void:
+    # FIX: Keep root input active while the scene tree is paused.
+    process_mode = Node.PROCESS_MODE_ALWAYS
+
     super._ready()
     _create_ultimate_interface()
     _show_intro_screen()
@@ -185,7 +181,10 @@ func _show_intro_screen() -> void:
     guide_visible = false
     achievements_visible = false
 
+    # FIX: Stop gameplay while keeping input active.
+    is_game_paused = true
     get_tree().paused = true
+
     _clear_ultimate_screen()
 
     var box := _make_screen_container()
@@ -263,6 +262,9 @@ func _start_adventure() -> void:
     guide_visible = false
     achievements_visible = false
 
+    # FIX: Resume gameplay when the start button is pressed.
+    is_game_paused = false
+
     _clear_ultimate_screen()
     ultimate_root.visible = false
 
@@ -271,8 +273,6 @@ func _start_adventure() -> void:
 
 # ============================================================
 # GUIDE - EXACTLY 100 ENTRIES
-# These are exploration ideas and guide entries,
-# not claims that every item is already implemented.
 # ============================================================
 
 func _get_guide_groups() -> Array:
@@ -463,7 +463,6 @@ func _show_guide_screen() -> void:
 
 # ============================================================
 # ACHIEVEMENTS SCREEN
-# The entries are a checklist of goals, not automatic awards.
 # ============================================================
 
 func _get_achievement_list() -> Array[String]:
