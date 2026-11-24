@@ -115,15 +115,21 @@ func _input(event: InputEvent) -> void:
 
         var target: Button = null
 
-        # FIX:
-        # Check the intro / guide / achievements menu first.
-        # It is displayed in ultimate_root, not responsive_root.
-        if is_instance_valid(ultimate_root) and ultimate_root.visible:
-            target = _find_touch_button(ultimate_root, touch.position)
+        # FIXED: Ultimate menu belongs to the child script.
+        # Access it through its actual scene path.
+        var intro_root := get_node_or_null(
+            "UltimateMenuLayer/UltimateRoot"
+        ) as Control
+
+        if is_instance_valid(intro_root) and intro_root.visible:
+            target = _find_touch_button(intro_root, touch.position)
+
         elif is_instance_valid(complete_overlay) and complete_overlay.visible:
             target = _find_touch_button(complete_overlay, touch.position)
+
         elif is_instance_valid(pause_overlay) and pause_overlay.visible:
             target = _find_touch_button(pause_overlay, touch.position)
+
         else:
             target = _find_touch_button(responsive_root, touch.position)
 
@@ -184,7 +190,6 @@ func _handle_touch_button(button: Button, is_down: bool) -> void:
     elif button == zoom_out_button:
         _zoom_camera_out()
     else:
-        # Includes garden interaction and all menu buttons.
         button.pressed.emit()
 
 
@@ -279,31 +284,36 @@ func create_ui() -> void:
     stamina_bar.max_value = STAMINA_MAX
     stamina_bar.value = STAMINA_MAX
     stamina_bar.show_percentage = false
+
     stamina_bar.add_theme_stylebox_override(
         "background", _make_bar_style(Color(0.03, 0.06, 0.10, 0.85))
     )
+
     stamina_bar.add_theme_stylebox_override(
         "fill", _make_bar_style(Color(0.20, 0.82, 0.40, 1.0))
     )
+
     responsive_root.add_child(stamina_bar)
 
-    # Direction pad: up, left, right, down.
     _make_dpad_button("▲", Vector2(0, -1))
     _make_dpad_button("◀", Vector2(-1, 0))
     _make_dpad_button("▶", Vector2(1, 0))
     _make_dpad_button("▼", Vector2(0, 1))
 
     sprint_button = _make_action_button("ركض", 19)
+
     sprint_button.button_down.connect(
         func():
             mouse_sprint_requested = true
             _refresh_sprint_request()
     )
+
     sprint_button.button_up.connect(
         func():
             mouse_sprint_requested = false
             _refresh_sprint_request()
     )
+
     responsive_root.add_child(sprint_button)
 
     jump_button = _make_action_button("قفز", 20)
@@ -341,14 +351,19 @@ func _make_label(
 ) -> Label:
     var label := Label.new()
     label.text = value
+
     label.add_theme_font_size_override("font_size", font_size)
     label.add_theme_color_override("font_color", color)
+
     label.add_theme_color_override(
         "font_shadow_color", Color(0, 0, 0, 0.95)
     )
+
     label.add_theme_constant_override("shadow_offset_x", 2)
     label.add_theme_constant_override("shadow_offset_y", 2)
+
     label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
     return label
 
 
@@ -358,6 +373,7 @@ func _make_dpad_button(
 ) -> void:
     var button := _make_action_button(caption, 34)
     button.name = "Move_" + caption
+
     responsive_root.add_child(button)
     dpad_buttons.append(button)
 
@@ -378,6 +394,7 @@ func _make_action_button(
     font_size: int
 ) -> Button:
     var button := Button.new()
+
     button.text = caption
     button.focus_mode = Control.FOCUS_NONE
     button.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -386,12 +403,15 @@ func _make_action_button(
     button.custom_minimum_size = Vector2(60, 60)
 
     button.add_theme_font_size_override("font_size", font_size)
+
     button.add_theme_color_override(
         "font_color", Color(1.0, 0.97, 0.86)
     )
+
     button.add_theme_color_override(
         "font_hover_color", Color.WHITE
     )
+
     button.add_theme_color_override(
         "font_pressed_color", Color(1.0, 0.88, 0.38)
     )
@@ -429,24 +449,31 @@ func _make_button_style(
     border_width: int
 ) -> StyleBoxFlat:
     var style := StyleBoxFlat.new()
+
     style.bg_color = fill_color
     style.border_color = border_color
+
     style.set_border_width_all(border_width)
     style.set_corner_radius_all(18)
+
     style.shadow_color = Color(0, 0, 0, 0.58)
     style.shadow_size = 6
     style.shadow_offset = Vector2(0, 3)
+
     style.content_margin_left = 7
     style.content_margin_right = 7
     style.content_margin_top = 7
     style.content_margin_bottom = 7
+
     return style
 
 
 func _make_bar_style(fill_color: Color) -> StyleBoxFlat:
     var style := StyleBoxFlat.new()
+
     style.bg_color = fill_color
     style.set_corner_radius_all(8)
+
     return style
 
 
@@ -472,12 +499,10 @@ func _layout_responsive_ui() -> void:
         52.0, 76.0
     )
 
-    # Keep every button within the visible viewport.
     for button in dpad_buttons:
         button.set_anchors_preset(Control.PRESET_TOP_LEFT)
         button.size = Vector2(button_size, button_size)
 
-    # Direction pad on the lower-right side.
     var center_x := view_size.x - margin - (button_size * 2.0) - gap
     var center_y := view_size.y - margin - (button_size * 2.0) - gap
 
@@ -490,11 +515,11 @@ func _layout_responsive_ui() -> void:
 
     for i in range(dpad_buttons.size()):
         dpad_buttons[i].position = dpad_positions[i]
+
         dpad_buttons[i].add_theme_font_size_override(
             "font_size", int(button_size * 0.40)
         )
 
-    # Sprint and jump on the lower-left side.
     var action_width := button_size * 1.35
     var action_height := button_size * 0.82
 
@@ -516,17 +541,19 @@ func _layout_responsive_ui() -> void:
     sprint_button.add_theme_font_size_override(
         "font_size", int(button_size * 0.25)
     )
+
     jump_button.add_theme_font_size_override(
         "font_size", int(button_size * 0.25)
     )
 
-    # Information panel.
     title_label.position = Vector2(margin, 8)
+
     title_label.add_theme_font_size_override(
         "font_size", 28 if portrait else 34
     )
 
     stage_label.position = Vector2(margin + 2, 44 if portrait else 49)
+
     stage_label.add_theme_font_size_override(
         "font_size", 13 if portrait else 16
     )
@@ -534,6 +561,7 @@ func _layout_responsive_ui() -> void:
     responsive_coin_label.position = Vector2(
         margin + 2, 68 if portrait else 76
     )
+
     responsive_coin_label.add_theme_font_size_override(
         "font_size", 20 if portrait else 24
     )
@@ -541,38 +569,44 @@ func _layout_responsive_ui() -> void:
     responsive_message_label.position = Vector2(
         margin, 104 if portrait else 112
     )
+
     responsive_message_label.size = Vector2(
         minf(view_size.x * 0.48, 430.0), 58.0
     )
+
     responsive_message_label.add_theme_font_size_override(
         "font_size", 14 if portrait else 17
     )
 
-    # Energy bar is placed below the information panel.
-    stamina_caption.position = Vector2(margin, 155 if portrait else 154)
+    stamina_caption.position = Vector2(
+        margin, 155 if portrait else 154
+    )
 
     stamina_bar.position = Vector2(
         margin + 48.0, 157 if portrait else 156
     )
+
     stamina_bar.size = Vector2(
         112.0 if portrait else 150.0, 15.0
     )
 
-    # Pause and camera controls at the upper-right.
     for button in [pause_button, zoom_in_button, zoom_out_button]:
         button.set_anchors_preset(Control.PRESET_TOP_LEFT)
 
     pause_button.size = Vector2(52, 52)
+
     pause_button.position = Vector2(
         view_size.x - margin - 52, margin
     )
 
     zoom_in_button.size = Vector2(44, 42)
+
     zoom_in_button.position = Vector2(
         view_size.x - margin - 44, 72
     )
 
     zoom_out_button.size = Vector2(44, 42)
+
     zoom_out_button.position = Vector2(
         view_size.x - margin - 44, 120
     )
@@ -583,11 +617,9 @@ func _layout_responsive_ui() -> void:
 func _refresh_move_vector() -> void:
     var combined := Vector2.ZERO
 
-    # Mouse / keyboard-style held directions.
     for direction in pressed_directions:
         combined += direction
 
-    # Independently held touch fingers.
     var touch_directions := [
         Vector2(0, -1),
         Vector2(-1, 0),
@@ -611,7 +643,9 @@ func _refresh_move_vector() -> void:
 func _release_all_controls() -> void:
     touch_fingers.clear()
     pressed_directions.clear()
+
     move_vector = Vector2.ZERO
+
     mouse_sprint_requested = false
     sprint_requested = false
     sprint_enabled = false
@@ -689,7 +723,6 @@ func _update_jump(delta: float) -> void:
         if jump_height <= 0.0:
             jump_velocity = 0.0
 
-    # Move the whole character vertically during the jump.
     if is_instance_valid(player):
         player.position.y = jump_height
 
@@ -710,6 +743,7 @@ func animate_character(delta: float) -> void:
         )
 
         character_sprite.rotation.z = sin(walk_time) * 0.035
+
     else:
         character_sprite.rotation.z = lerpf(
             character_sprite.rotation.z,
@@ -754,7 +788,6 @@ func follow_camera(delta: float) -> void:
 
     camera.keep_aspect = Camera3D.KEEP_HEIGHT
 
-    # A wider field of view shows more of the room.
     camera.fov = 70.0 if not portrait else 76.0
 
     var look_direction := Vector3(
@@ -836,6 +869,7 @@ func _create_pause_overlay() -> void:
     var heading := _make_label(
         "اللعبة متوقفة", 27, Color(1.0, 0.82, 0.20)
     )
+
     heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     column.add_child(heading)
 
@@ -862,6 +896,7 @@ func _create_complete_overlay() -> void:
     var heading := _make_label(
         "أحسنت يا يحيى!", 29, Color(1.0, 0.82, 0.20)
     )
+
     heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     column.add_child(heading)
 
@@ -869,6 +904,7 @@ func _create_complete_overlay() -> void:
         "جمعت العملات الأربع وخرجت من الغرفة بنجاح!",
         17, Color.WHITE
     )
+
     details.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     column.add_child(details)
@@ -881,27 +917,36 @@ func _create_complete_overlay() -> void:
 
 func _make_overlay(node_name: String) -> ColorRect:
     var overlay := ColorRect.new()
+
     overlay.name = node_name
     overlay.color = Color(0.015, 0.025, 0.05, 0.84)
+
     overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
     overlay.visible = false
     overlay.mouse_filter = Control.MOUSE_FILTER_STOP
     overlay.process_mode = Node.PROCESS_MODE_ALWAYS
+
     responsive_root.add_child(overlay)
+
     return overlay
 
 
 func _make_overlay_panel(parent: Control) -> PanelContainer:
     var panel := PanelContainer.new()
+
     panel.set_anchors_preset(Control.PRESET_CENTER)
     panel.position = Vector2(-165, -140)
     panel.size = Vector2(330, 280)
 
     var style := StyleBoxFlat.new()
+
     style.bg_color = Color(0.055, 0.09, 0.15, 0.99)
     style.border_color = Color(0.95, 0.67, 0.16, 1.0)
+
     style.set_border_width_all(3)
     style.set_corner_radius_all(22)
+
     style.content_margin_left = 20
     style.content_margin_right = 20
     style.content_margin_top = 20
@@ -927,6 +972,7 @@ func _open_pause_menu() -> void:
 func _resume_game() -> void:
     pause_overlay.visible = false
     is_game_paused = false
+
     get_tree().paused = false
 
 
@@ -953,6 +999,7 @@ func update_coin_label() -> void:
         responsive_coin_label.text = (
             "العملات: " + str(coin_count) + " / 4"
         )
+
     elif is_instance_valid(coin_label):
         coin_label.text = (
             "العملات: " + str(coin_count) + " / 4"
@@ -963,6 +1010,7 @@ func show_message(value: String) -> void:
     if is_instance_valid(responsive_message_label):
         responsive_message_label.text = value
         message_timer = 2.8
+
     elif is_instance_valid(message_label):
         message_label.text = value
         message_timer = 2.8
