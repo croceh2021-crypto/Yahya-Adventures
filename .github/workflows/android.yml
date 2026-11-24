@@ -112,3 +112,80 @@ jobs:
           name: Yahya-Adventures-APK
           path: build/YahyaAdventures.apk
           if-no-files-found: error
+
+
+  android-emulator-smoke:
+    name: Run APK in Android Emulator
+    runs-on: ubuntu-latest
+    needs: build-android
+    timeout-minutes: 20
+
+    steps:
+      - name: Download APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Yahya-Adventures-APK
+          path: build
+
+      - name: Verify APK artifact
+        run: |
+          test -s build/YahyaAdventures.apk
+          ls -lh build/YahyaAdventures.apk
+
+      - name: Install, launch, and exercise game
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          disable-animations: true
+          script: |
+            set -euxo pipefail
+            mkdir -p test-results
+
+            adb wait-for-device
+            adb shell wm size 1280x720
+            adb logcat -c
+
+            adb install -r build/YahyaAdventures.apk
+            adb shell monkey -p com.yahya.adventures 1
+            sleep 45
+
+            echo "Checking that the game process is still running"
+            adb shell pidof com.yahya.adventures
+
+            echo "Capturing initial game screen"
+            adb exec-out screencap -p > test-results/game-start.png
+            test -s test-results/game-start.png
+
+            echo "Sending basic touch input at common gameplay areas"
+            adb shell input tap 120 610
+            sleep 2
+            adb shell input tap 1160 610
+            sleep 2
+            adb shell input tap 640 360
+            sleep 5
+
+            echo "Capturing screen after touch input"
+            adb exec-out screencap -p > test-results/game-after-input.png
+            test -s test-results/game-after-input.png
+
+            echo "Collecting Android logs"
+            adb logcat -d -v time > test-results/logcat.txt
+
+            if grep -E -i "FATAL EXCEPTION|Fatal signal|SIGSEGV|Process com\\.yahya\\.adventures.*(died|has died)" test-results/logcat.txt; then
+              echo "A fatal Android/app error was found in logcat"
+              exit 1
+            fi
+
+            echo "Game remained running after launch and basic touch input"
+
+      - name: Upload emulator test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Yahya-Adventures-Emulator-Test
+          path: test-results/
+          if-no-files-found: warn
