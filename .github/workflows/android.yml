@@ -150,10 +150,17 @@ jobs:
           arch: x86_64
           profile: pixel_2
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-metrics
-          disable-animations: true
+          disable-animations: false
           script: |
             set -euo pipefail
             mkdir -p test-results
+
+            capture_diagnostics() {
+              mkdir -p test-results
+              timeout 30s adb logcat -d -v time > test-results/logcat-on-exit.txt 2>&1 || true
+              timeout 20s adb exec-out screencap -p > test-results/screen-on-exit.png 2>/dev/null || true
+            }
+            trap capture_diagnostics EXIT
 
             adb_retry() {
               local attempt
