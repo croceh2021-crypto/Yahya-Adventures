@@ -1,6 +1,7 @@
+
 extends Node3D
 
-# YAHYA ADVENTURES - ROOM & CHARACTER UPDATE
+# YAHYA ADVENTURES - TOUCH CONTROLS UPDATE
 # Godot 4.4.1
 
 const PLAYER_SPEED := 4.8
@@ -671,13 +672,17 @@ func show_message(value: String) -> void:
 
 func create_ui() -> void:
     var layer := CanvasLayer.new()
+    layer.name = "TouchControlsLayer"
+    layer.layer = 10
     add_child(layer)
 
     var root := Control.new()
-    root.set_anchors_and_offsets_preset(
-        Control.PRESET_FULL_RECT)
-
+    root.name = "TouchControls"
+    root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    root.mouse_filter = Control.MOUSE_FILTER_PASS
     layer.add_child(root)
+
+    # TITLE
 
     var title := Label.new()
     title.text = "مغامرات يحيى"
@@ -692,6 +697,8 @@ func create_ui() -> void:
 
     root.add_child(title)
 
+    # COINS COUNTER
+
     coin_label = Label.new()
     coin_label.position = Vector2(25, 70)
 
@@ -704,9 +711,10 @@ func create_ui() -> void:
 
     root.add_child(coin_label)
 
+    # MESSAGE
+
     message_label = Label.new()
-    message_label.text = (
-        "استكشف الغرفة واجمع العملات الذهبية")
+    message_label.text = "استكشف الغرفة واجمع العملات الذهبية"
 
     message_label.position = Vector2(25, 115)
 
@@ -719,20 +727,22 @@ func create_ui() -> void:
 
     root.add_child(message_label)
 
+    # LARGE RIGHT-SIDE TOUCH CONTROLS
+
     add_control_button(
-        root, "◀", Vector2(25, -115),
+        root, "◀", Vector2(-246, -128),
         Vector2(-1, 0))
 
     add_control_button(
-        root, "▶", Vector2(145, -115),
+        root, "▶", Vector2(-110, -128),
         Vector2(1, 0))
 
     add_control_button(
-        root, "▲", Vector2(85, -180),
+        root, "▲", Vector2(-178, -210),
         Vector2(0, -1))
 
     add_control_button(
-        root, "▼", Vector2(85, -48),
+        root, "▼", Vector2(-178, -46),
         Vector2(0, 1))
 
 
@@ -745,18 +755,71 @@ func add_control_button(
 
     var button := Button.new()
 
+    button.name = "Move_" + caption
     button.text = caption
-    button.size = Vector2(100, 62)
+
+    button.custom_minimum_size = Vector2(112, 76)
+    button.size = Vector2(112, 76)
 
     button.set_anchors_preset(
-        Control.PRESET_BOTTOM_LEFT)
+        Control.PRESET_BOTTOM_RIGHT)
 
     button.position = pos
 
+    button.focus_mode = Control.FOCUS_NONE
+    button.mouse_filter = Control.MOUSE_FILTER_STOP
+
     button.add_theme_font_size_override(
-        "font_size", 30)
+        "font_size", 38)
+
+    button.add_theme_color_override(
+        "font_color", Color.WHITE)
+
+    button.add_theme_color_override(
+        "font_hover_color", Color.WHITE)
+
+    button.add_theme_color_override(
+        "font_pressed_color",
+        Color(1.0, 0.86, 0.35))
+
+    # NORMAL BUTTON STYLE
+
+    var normal_style := StyleBoxFlat.new()
+
+    normal_style.bg_color = Color(0.07, 0.16, 0.27, 0.88)
+    normal_style.border_color = Color(0.35, 0.78, 1.0, 1.0)
+
+    normal_style.set_border_width_all(3)
+    normal_style.set_corner_radius_all(20)
+
+    normal_style.shadow_color = Color(0, 0, 0, 0.35)
+    normal_style.shadow_size = 5
+
+    button.add_theme_stylebox_override(
+        "normal", normal_style)
+
+    # HOVER STYLE
+
+    var hover_style := normal_style.duplicate() as StyleBoxFlat
+
+    hover_style.bg_color = Color(0.10, 0.30, 0.46, 0.96)
+
+    button.add_theme_stylebox_override(
+        "hover", hover_style)
+
+    # PRESSED STYLE
+
+    var pressed_style := normal_style.duplicate() as StyleBoxFlat
+
+    pressed_style.bg_color = Color(0.12, 0.48, 0.68, 1.0)
+    pressed_style.border_color = Color(1.0, 0.82, 0.25, 1.0)
+
+    button.add_theme_stylebox_override(
+        "pressed", pressed_style)
 
     root.add_child(button)
+
+    # TOUCH INPUT
 
     button.button_down.connect(func():
         move_vector = direction
@@ -770,6 +833,8 @@ func add_control_button(
         move_vector = Vector2.ZERO
     )
 
+
+# UPDATE COINS LABEL
 
 func update_coin_label() -> void:
     if is_instance_valid(coin_label):
