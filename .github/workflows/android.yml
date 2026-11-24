@@ -118,7 +118,10 @@ jobs:
     name: Run APK in Android Emulator
     runs-on: ubuntu-latest
     needs: build-android
-    timeout-minutes: 20
+    timeout-minutes: 25
+    env:
+      # GitHub-hosted Linux runners may not expose KVM; explicitly allow the emulator's TCG fallback.
+      ANDROID_I_WANT_MY_TCG: "yes"
 
     steps:
       - name: Download APK artifact
@@ -135,10 +138,10 @@ jobs:
       - name: Install, launch, and exercise game
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 30
           target: google_apis
           arch: x86_64
-          profile: pixel_6
+          profile: pixel_2
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           disable-animations: true
           script: |
@@ -151,10 +154,17 @@ jobs:
 
             adb install -r build/YahyaAdventures.apk
             adb shell monkey -p com.yahya.adventures 1
-            sleep 45
+            echo "Waiting for the game process (maximum 30 seconds)"
+            for attempt in $(seq 1 15); do
+              if adb shell pidof com.yahya.adventures | grep -q '[0-9]'; then
+                break
+              fi
+              sleep 2
+            done
 
             echo "Checking that the game process is still running"
             adb shell pidof com.yahya.adventures
+            sleep 8
 
             echo "Capturing initial game screen"
             adb exec-out screencap -p > test-results/game-start.png
@@ -162,11 +172,11 @@ jobs:
 
             echo "Sending basic touch input at common gameplay areas"
             adb shell input tap 120 610
-            sleep 2
+            sleep 1
             adb shell input tap 1160 610
-            sleep 2
+            sleep 1
             adb shell input tap 640 360
-            sleep 5
+            sleep 2
 
             echo "Capturing screen after touch input"
             adb exec-out screencap -p > test-results/game-after-input.png
