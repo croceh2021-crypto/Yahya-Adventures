@@ -119,11 +119,17 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-android
     timeout-minutes: 25
-    env:
-      # GitHub-hosted Linux runners may not expose KVM; explicitly allow the emulator's TCG fallback.
-      ANDROID_I_WANT_MY_TCG: "yes"
-
     steps:
+      - name: Select emulator acceleration
+        shell: bash
+        run: |
+          if [[ -e /dev/kvm && -r /dev/kvm && -w /dev/kvm ]]; then
+            echo "KVM is available; the emulator can use hardware acceleration."
+          else
+            echo "KVM is unavailable; enabling the emulator's software TCG fallback."
+            echo "ANDROID_I_WANT_MY_TCG=yes" >> "$GITHUB_ENV"
+          fi
+
       - name: Download APK artifact
         uses: actions/download-artifact@v4
         with:
@@ -142,48 +148,80 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_2
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-metrics
           disable-animations: true
           script: |
-            set -euxo pipefail
+            set -euo pipefail
             mkdir -p test-results
 
-            adb wait-for-device
-            adb shell wm size 1280x720
-            adb logcat -c
+            adb_retry() {
+              local attempt
+              for attempt in 1 2 3; do
+                if adb "$@"; then
+                  return 0
+                fi
+                echo "ADB command failed (attempt $attempt/3): $*"
+                adb reconnect offline || true
+                adb start-server || true
+                sleep 3
+              done
+              echo "ADB command failed after 3 attempts: $*" >&2
+              return 1
+            }
 
-            adb install -r build/YahyaAdventures.apk
-            adb shell monkey -p com.yahya.adventures 1
-            echo "Waiting for the game process (maximum 30 seconds)"
-            for attempt in $(seq 1 15); do
-              if adb shell pidof com.yahya.adventures | grep -q '[0-9]'; then
+            echo "Waiting for Android device"
+            timeout 120s adb wait-for-device
+            for attempt in $(seq 1 30); do
+              boot_state="$(adb_retry shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+              if [[ "$boot_state" == "1" ]]; then
                 break
               fi
               sleep 2
             done
+            [[ "$boot_state" == "1" ]] || { echo "Android did not finish booting"; exit 1; }
+
+            echo "Applying lightweight test display settings"
+            adb_retry shell wm size 854x480
+            adb_retry logcat -c
+
+            echo "Installing APK with automatic ADB recovery"
+            adb_retry install -r build/YahyaAdventures.apk
+
+            echo "Launching game"
+            adb_retry shell monkey -p com.yahya.adventures 1
+            echo "Waiting for the game process (maximum 30 seconds)"
+            game_pid=""
+            for attempt in $(seq 1 15); do
+              game_pid="$(adb_retry shell pidof com.yahya.adventures 2>/dev/null | tr -d '\r' || true)"
+              if [[ -n "$game_pid" ]]; then
+                break
+              fi
+              sleep 2
+            done
+            [[ -n "$game_pid" ]] || { echo "Game process did not start"; exit 1; }
 
             echo "Checking that the game process is still running"
-            adb shell pidof com.yahya.adventures
-            sleep 8
+            sleep 5
+            adb_retry shell pidof com.yahya.adventures
 
             echo "Capturing initial game screen"
-            adb exec-out screencap -p > test-results/game-start.png
+            adb_retry exec-out screencap -p > test-results/game-start.png
             test -s test-results/game-start.png
 
             echo "Sending basic touch input at common gameplay areas"
-            adb shell input tap 120 610
+            adb_retry shell input tap 80 400
             sleep 1
-            adb shell input tap 1160 610
+            adb_retry shell input tap 780 400
             sleep 1
-            adb shell input tap 640 360
+            adb_retry shell input tap 427 240
             sleep 2
 
             echo "Capturing screen after touch input"
-            adb exec-out screencap -p > test-results/game-after-input.png
+            adb_retry exec-out screencap -p > test-results/game-after-input.png
             test -s test-results/game-after-input.png
 
             echo "Collecting Android logs"
-            adb logcat -d -v time > test-results/logcat.txt
+            adb_retry logcat -d -v time > test-results/logcat.txt
 
             if grep -E -i "FATAL EXCEPTION|Fatal signal|SIGSEGV|Process com\\.yahya\\.adventures.*(died|has died)" test-results/logcat.txt; then
               echo "A fatal Android/app error was found in logcat"
