@@ -1,3 +1,4 @@
+
 extends "res://Scripts/main.gd"
 
 # YAHYA ADVENTURES - FULL SCREEN & MULTI-TOUCH UPDATE
@@ -114,8 +115,12 @@ func _input(event: InputEvent) -> void:
 
         var target: Button = null
 
-        # When a menu is open, only its buttons can receive touches.
-        if is_instance_valid(complete_overlay) and complete_overlay.visible:
+        # FIX:
+        # Check the intro / guide / achievements menu first.
+        # It is displayed in ultimate_root, not responsive_root.
+        if is_instance_valid(ultimate_root) and ultimate_root.visible:
+            target = _find_touch_button(ultimate_root, touch.position)
+        elif is_instance_valid(complete_overlay) and complete_overlay.visible:
             target = _find_touch_button(complete_overlay, touch.position)
         elif is_instance_valid(pause_overlay) and pause_overlay.visible:
             target = _find_touch_button(pause_overlay, touch.position)
@@ -179,7 +184,7 @@ func _handle_touch_button(button: Button, is_down: bool) -> void:
     elif button == zoom_out_button:
         _zoom_camera_out()
     else:
-        # Includes the garden interaction button and menu buttons.
+        # Includes garden interaction and all menu buttons.
         button.pressed.emit()
 
 
