@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - yahya-3d-preview-test
   workflow_dispatch:
 
 jobs:
