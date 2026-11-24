@@ -224,6 +224,12 @@ func _create_garden_objects() -> void:
 # -------------------------------------------------------------------
 
 func _create_100_nature_details() -> void:
+    # Build the extra world details gradually so Android can render the
+    # intro menu before the full garden decoration is created.
+    call_deferred("_create_100_nature_details_in_batches")
+
+
+func _create_100_nature_details_in_batches() -> void:
     realism_rng.seed = REALISM_SEED
     for i in range(NATURE_DETAIL_COUNT):
         var x := realism_rng.randf_range(-26.0, 26.0)
@@ -240,6 +246,12 @@ func _create_100_nature_details() -> void:
         else:
             _create_wildflower_cluster(p, i)
         realism_detail_count += 1
+
+        # Limit per-frame object creation to avoid a long black/loading screen.
+        if i % 5 == 4:
+            await get_tree().process_frame
+
+    print("Yahya Adventures: 100 natural detail groups created in batches.")
 
 
 func _create_grass_clump(pos: Vector3, index: int) -> void:
@@ -305,7 +317,8 @@ func _realism_mesh(parent: Node3D, node_name: String, mesh: Mesh, pos: Vector3, 
     item.position = pos
     item.scale = scale_value
     item.material_override = _realism_material(color)
-    item.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+    # Small decorative meshes do not need individual shadow maps on mobile.
+    item.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
     parent.add_child(item)
     return item
 
