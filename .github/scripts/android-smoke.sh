@@ -132,8 +132,9 @@ fi
 echo "PASS: Start button left the intro menu; interaction marker will be checked in final logcat"
 
 echo "TEST 2: Movement control"
-# Hold the right D-pad button briefly, then release.
-adb_retry shell input swipe 780 337 780 337 1200
+# Hold the center of the RIGHT D-pad button briefly, then release.
+# At 854x480 the responsive D-pad places RIGHT around (810,367).
+adb_retry shell input swipe 810 367 810 367 1200
 sleep 2
 adb_retry exec-out screencap -p > "$RESULTS_DIR/after-movement.png"
 test -s "$RESULTS_DIR/after-movement.png"
@@ -141,7 +142,8 @@ test -s "$RESULTS_DIR/after-movement.png"
 echo "Movement input command completed; callback marker will be checked in final logcat"
 
 echo "TEST 3: Jump control"
-adb_retry shell input tap 55 360
+# The jump button is at the lower-left; tap its center at 854x480.
+adb_retry shell input tap 54 384
 sleep 2
 adb_retry exec-out screencap -p > "$RESULTS_DIR/after-jump.png"
 test -s "$RESULTS_DIR/after-jump.png"
