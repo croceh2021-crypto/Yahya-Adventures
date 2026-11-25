@@ -13,8 +13,11 @@ var creature_intro_root: Control
 
 
 func _ready() -> void:
-    super._ready()
+    # Queue the intro before parent scripts queue their heavy deferred
+    # visual generation. This lets the first visible frame be our game
+    # cover instead of leaving Android on the Godot splash screen.
     call_deferred("_creature_show_intro")
+    super._ready()
 
 
 func _process(delta: float) -> void:
