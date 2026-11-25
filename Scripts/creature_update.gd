@@ -474,3 +474,38 @@ func _creature_animate_enemies() -> void:
             var tail := enemy.get_node_or_null("DogTail") as Node3D
             if is_instance_valid(tail):
                 tail.rotation.z = sin(creature_clock * 5.0) * 0.28
+
+
+# ------------------------------------------------------------
+# MOBILE MOVEMENT DIRECTION FIX
+# The camera faces toward -Z, but the old touch mapping made the
+# forward/backward controls feel reversed on some screen layouts.
+# Map by button name instead of relying on array order.
+# ------------------------------------------------------------
+
+func _refresh_move_vector() -> void:
+    var combined := Vector2.ZERO
+
+    # Mouse/keyboard button signals store the original D-pad vectors.
+    # Invert only the vertical axis so UP means forward and DOWN means back.
+    for direction in pressed_directions:
+        combined += Vector2(direction.x, -direction.y)
+
+    # Touch routing uses actual button references; never assume that the
+    # order of dpad_buttons still matches a hard-coded direction array.
+    for held_button_value in touch_fingers.values():
+        var held_button := held_button_value as Button
+        if not is_instance_valid(held_button):
+            continue
+
+        match held_button.name:
+            "Move_▲":
+                combined += Vector2(0.0, 1.0)
+            "Move_▼":
+                combined += Vector2(0.0, -1.0)
+            "Move_◀":
+                combined += Vector2(-1.0, 0.0)
+            "Move_▶":
+                combined += Vector2(1.0, 0.0)
+
+    move_vector = combined.normalized() if combined.length() > 0.0 else Vector2.ZERO
