@@ -44,7 +44,7 @@ Primary branch: main
 - The full script inheritance chain from `mobile_controls_update.gd` through `main.gd` was checked; every referenced parent script exists and no inheritance cycle was found.
 - `Main.tscn` points to the new mobile HUD script, and the `moh.png` repository file exists (the GitHub file endpoint returned its blob SHA).
 - PR #5's earlier workflow run `45692938270` passed APK export, but its emulator job had not completed when checked; this run predates the corrected HUD script and is not final validation.
-- The corrected HUD branch requires a fresh Android build and emulator smoke test before merge. Do not describe the APK as fully tested or ready until both jobs succeed.
+- The corrected HUD branch requires a fresh Android build and emulator smoke test before merge. The workflow trigger was added in commit `b574fd113be68cba56fa1c2b21a9ae05a33d2dcc`; do not describe the APK as fully tested or ready until both jobs succeed.
 - Workflow runs started for the three commits:
   - `90f6816b7541e13cde25cc0fd389b19f827ec823`
   - `158d8343820ce7e151ffea5342bec7846d5b8fae`
