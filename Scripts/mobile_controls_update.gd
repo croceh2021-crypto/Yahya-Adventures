@@ -3,20 +3,12 @@ extends "res://Scripts/realism_100_update.gd"
 # YAHYA ADVENTURES - MOBILE CONTROL LAYOUT UPDATE
 # Godot 4.4.1
 # Keeps the complete existing gameplay inheritance chain and improves
-# combat HUD placement when the device rotates or uses a narrow screen.
-
-func _layout_responsive_ui() -> void:
-    super._layout_responsive_ui()
-    _mobile_layout_combat_hud()
-    _fix_interaction_button_position()
-
-
-func _layout_garden_ui() -> void:
-    super._layout_garden_ui()
-    _mobile_layout_combat_hud()
-
+# combat HUD placement on narrow portrait and landscape phone screens.
 
 func _exp_layout_hud() -> void:
+    # Preserve the existing responsive combat HUD setup, then refine it
+    # for compact screens. This is the layout hook defined by the
+    # inherited combat_controls_fix.gd script.
     super._exp_layout_hud()
     _mobile_layout_combat_hud()
 
@@ -34,8 +26,8 @@ func _mobile_layout_combat_hud() -> void:
     var button_width := clampf(view_size.x * 0.22, 76.0, 100.0)
     var button_height := clampf(view_size.y * 0.075, 48.0, 62.0)
 
-    # Reserve a separate left column for status text so it never collides
-    # with the attack/heal buttons on narrow portrait screens.
+    # Reserve a separate left column for status text so it does not
+    # collide with the attack/heal buttons on narrow portrait screens.
     var status_width := maxf(
         128.0,
         view_size.x - button_width - (margin * 3.0) - 12.0
