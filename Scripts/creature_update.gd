@@ -5,7 +5,7 @@ extends "res://Scripts/advanced_50_update.gd"
 # Adds wolves/dogs, dragons with fire breath, and the repository cover image.
 # Existing gameplay systems remain inherited and unchanged.
 
-const CREATURE_INTRO_IMAGE := "res://moh_intro.jpg"
+const CREATURE_INTRO_IMAGE := "res://moh.png"
 
 var creature_clock := 0.0
 var creature_intro_layer: CanvasLayer
