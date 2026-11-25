@@ -35,22 +35,26 @@ Primary branch: main
 - `.github/workflows/android.yml`
   - Preserve and optimize `moh.png` in the APK because the intro scene loads `res://moh.png` directly; do not rename or remove it during export.
 
-## Existing mobile HUD work
-- `Scripts/mobile_controls_update.gd` and its `Main.tscn` link were reapplied on top of the latest creature update in PR #5, branch `fix/mobile-hud-after-creatures-2026-11-25`.
-- PR #5 is open and awaits Android build/emulator validation and review; its HUD change is not active on `main` until merged.
-- Superseded PR #4 was closed to avoid merging an outdated branch.
+## Mobile HUD update (merged)
+
+- Added `Scripts/mobile_controls_update.gd`, inheriting from `Scripts/realism_100_update.gd` so the complete gameplay inheritance chain remains active.
+- Updated `Main.tscn` to activate the mobile HUD script.
+- The HUD override uses the existing `_exp_layout_hud()` hook from `combat_controls_fix.gd`, calls the inherited implementation, then adjusts health, level, gems, quest text, attack and heal controls for portrait/landscape phone layouts.
+- Removed invalid first-draft calls to `_layout_responsive_ui()`, `_layout_garden_ui()` and `_fix_interaction_button_position()`; these methods are not defined in the inherited script chain.
+- PR #5 was closed because its branch was three commits behind `main`; its work was reapplied cleanly on the latest mainline in PR #6.
+- PR #6 was merged successfully into `main` on 2026-11-25.
+- Merge commit: `3136433bd651af4d0d6c098036a7ed278ec808bf`.
 
 ## Validation status
-- The full script inheritance chain from `mobile_controls_update.gd` through `main.gd` was checked; every referenced parent script exists and no inheritance cycle was found.
-- `Main.tscn` points to the new mobile HUD script, and the `moh.png` repository file exists (the GitHub file endpoint returned its blob SHA).
-- PR #5's earlier workflow run `45692938270` passed APK export, but its emulator job had not completed when checked; this run predates the corrected HUD script and is not final validation.
-- The corrected HUD branch requires a fresh Android build and emulator smoke test before merge. The workflow trigger was added in commit `b574fd113be68cba56fa1c2b21a9ae05a33d2dcc`; do not describe the APK as fully tested or ready until both jobs succeed.
-- Workflow runs started for the three commits:
-  - `90f6816b7541e13cde25cc0fd389b19f827ec823`
-  - `158d8343820ce7e151ffea5342bec7846d5b8fae`
-  - `0aaef16b2d13d31b94b0907579b4bfd015b74ea4`
+
+- Verified after merge that `Main.tscn` references `res://Scripts/mobile_controls_update.gd`.
+- Verified the new script exists on `main` and uses the inherited `_exp_layout_hud()` hook.
+- Audited the full script inheritance chain from `mobile_controls_update.gd` through `main.gd`; every parent path exists and no inheritance cycle was found.
+- Verified the `moh.png` asset exists in the repository and the main Android workflow preserves it during optimization.
+- Static review identified and corrected the invalid layout-hook calls before merge.
+- Android APK export and emulator smoke test for the exact merged `main` commit are **not yet confirmed**. Earlier runs tested prior commits only; do not call the merged APK fully validated until the current main build and emulator jobs pass.
 
 ## Next steps
-1. Validate PR #6 from `fix/mobile-hud-mainline-2026-11-25` with Android export and emulator smoke tests.
-2. Fix any parser, export or runtime failures before merging.
-3. Merge PR #6 only after validation, then record the merge commit and post-merge workflow result here.
+1. Confirm Android export and emulator smoke tests for the merged `main` commit.
+2. Fix any parser, export or runtime failures discovered by the current build.
+3. Record the final APK artifact and test result here.
