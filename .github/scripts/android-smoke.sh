@@ -4,11 +4,17 @@ set -Eeuo pipefail
 RESULTS_DIR="test-results"
 mkdir -p "$RESULTS_DIR"
 
+run_with_timeout() {
+  local seconds="$1"
+  shift
+  perl -e '$t = shift; alarm $t; exec @ARGV' "$seconds" "$@"
+}
+
 capture_diagnostics() {
   local exit_code=$?
   mkdir -p "$RESULTS_DIR"
-  timeout 30s adb logcat -d -v time > "$RESULTS_DIR/logcat-on-exit.txt" 2>&1 || true
-  timeout 20s adb exec-out screencap -p > "$RESULTS_DIR/screen-on-exit.png" 2>/dev/null || true
+  run_with_timeout 30 adb logcat -d -v time > "$RESULTS_DIR/logcat-on-exit.txt" 2>&1 || true
+  run_with_timeout 20 adb exec-out screencap -p > "$RESULTS_DIR/screen-on-exit.png" 2>/dev/null || true
   printf 'Smoke test exit code: %s\n' "$exit_code" > "$RESULTS_DIR/exit-status.txt"
   return 0
 }
@@ -30,7 +36,7 @@ adb_retry() {
 }
 
 echo "Waiting for Android device"
-timeout 120s adb wait-for-device
+run_with_timeout 120 adb wait-for-device
 boot_state=""
 for attempt in $(seq 1 60); do
   boot_state="$(adb_retry shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
