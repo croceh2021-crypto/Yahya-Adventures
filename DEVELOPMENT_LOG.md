@@ -37,19 +37,21 @@ Primary branch: main
 
 ## Existing mobile HUD work
 - `Scripts/mobile_controls_update.gd` and its `Main.tscn` link were reapplied on top of the latest creature update in PR #5, branch `fix/mobile-hud-after-creatures-2026-11-25`.
-- PR #5 is open and awaits Android build/emulator validation and review; its HUD change is not active on `main` until merged.
+- PR #5 is open and awaits final Android emulator validation; its HUD change is not active on `main` until merged.
+- Code review found that the first HUD draft called `_layout_responsive_ui()`, `_layout_garden_ui()` and `_fix_interaction_button_position()`, which are not defined in the inherited script chain. Those calls were removed. The update now overrides the real inherited `_exp_layout_hud()` hook from `combat_controls_fix.gd`, calls its parent implementation, and then applies the compact mobile layout.
 - Superseded PR #4 was closed to avoid merging an outdated branch.
 
 ## Validation status
-- Android export and emulator validation for the current creature/monster changes: **pending GitHub Actions**.
-- Do not describe the APK as tested or ready until both export and emulator smoke-test jobs complete successfully.
+- PR #5 workflow run `45692938270`: Android APK export **passed**; Android emulator smoke test was **queued** at the last check.
+- The mobile HUD hook correction was committed as `bf596210d9403999981642bb6a5157040526ec04`; its updated workflow run must complete before merge.
+- Do not describe the APK as fully tested or ready until both export and emulator smoke-test jobs complete successfully.
 - Workflow runs started for the three commits:
   - `90f6816b7541e13cde25cc0fd389b19f827ec823`
   - `158d8343820ce7e151ffea5342bec7846d5b8fae`
   - `0aaef16b2d13d31b94b0907579b4bfd015b74ea4`
 
 ## Next steps
-1. Check the latest GitHub Actions build and Android emulator results.
+1. Confirm the updated PR build and Android emulator smoke test both pass.
 2. Fix any parser, export or runtime failures before distributing an APK.
-3. Reconcile the mobile HUD PR with the latest main branch.
+3. Merge PR #5 only after the checks pass, then verify the resulting `main` commit and workflow.
 4. Keep this log updated after each verified change and test.
