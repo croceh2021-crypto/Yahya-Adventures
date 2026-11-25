@@ -41,15 +41,17 @@ Primary branch: main
 - Superseded PR #4 was closed to avoid merging an outdated branch.
 
 ## Validation status
-- Android export and emulator validation for the current creature/monster changes: **pending GitHub Actions**.
-- Do not describe the APK as tested or ready until both export and emulator smoke-test jobs complete successfully.
+- The full script inheritance chain from `mobile_controls_update.gd` through `main.gd` was checked; every referenced parent script exists and no inheritance cycle was found.
+- `Main.tscn` points to the new mobile HUD script, and the `moh.png` repository file exists (the GitHub file endpoint returned its blob SHA).
+- PR #5's earlier workflow run `45692938270` passed APK export, but its emulator job had not completed when checked; this run predates the corrected HUD script and is not final validation.
+- The corrected HUD branch requires a fresh Android build and emulator smoke test before merge. Do not describe the APK as fully tested or ready until both jobs succeed.
 - Workflow runs started for the three commits:
   - `90f6816b7541e13cde25cc0fd389b19f827ec823`
   - `158d8343820ce7e151ffea5342bec7846d5b8fae`
   - `0aaef16b2d13d31b94b0907579b4bfd015b74ea4`
 
 ## Next steps
-1. Check the latest GitHub Actions build and Android emulator results.
-2. Fix any parser, export or runtime failures before distributing an APK.
-3. Reconcile the mobile HUD PR with the latest main branch.
-4. Keep this log updated after each verified change and test.
+1. Open a fresh PR from `fix/mobile-hud-mainline-2026-11-25` to `main`.
+2. Confirm the latest Android export and emulator smoke test both pass.
+3. Fix any parser, export or runtime failures before merging.
+4. Merge only after validation, then record the merge commit and post-merge workflow result here.
