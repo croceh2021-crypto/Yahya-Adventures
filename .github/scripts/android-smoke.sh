@@ -109,4 +109,9 @@ if grep -E -i "FATAL EXCEPTION|Fatal signal|SIGSEGV|Process com\\.yahya\\.advent
   exit 1
 fi
 
-echo "Game process remained running after launch and touch input"
+if grep -E -i "SCRIPT ERROR:|Failed to load script .* with error|Parse Error:" "$RESULTS_DIR/logcat.txt"; then
+  echo "A Godot script error was found; the game did not load cleanly"
+  exit 1
+fi
+
+echo "Game process remained running after launch and touch input with no Android or Godot script errors"
