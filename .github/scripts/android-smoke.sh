@@ -84,11 +84,33 @@ for attempt in $(seq 1 30); do
 done
 [[ -n "$game_pid" ]] || { echo "Game process did not start"; exit 1; }
 
-echo "Waiting for initial rendering"
-sleep 8
-adb_retry shell pidof com.yahya.adventures
-adb_retry exec-out screencap -p > "$RESULTS_DIR/game-start.png"
-test -s "$RESULTS_DIR/game-start.png"
+echo "Preparing Apple Vision OCR to verify the actual game menu"
+swiftc -O .github/scripts/recognize-screen.swift -o "$RESULTS_DIR/recognize-screen"
+
+echo "Waiting up to 90 seconds for the main menu title to appear"
+menu_found=""
+for attempt in $(seq 1 45); do
+  adb_retry shell pidof com.yahya.adventures
+  adb_retry exec-out screencap -p > "$RESULTS_DIR/game-start.png"
+  test -s "$RESULTS_DIR/game-start.png"
+  "$RESULTS_DIR/recognize-screen" "$RESULTS_DIR/game-start.png" > "$RESULTS_DIR/screen-text.txt" 2> "$RESULTS_DIR/ocr-error.txt" || true
+
+  if grep -E -i "YAHYA[[:space:]]+ADVENTURES" "$RESULTS_DIR/screen-text.txt"; then
+    menu_found="1"
+    echo "Verified the YAHYA ADVENTURES main menu title on screen"
+    break
+  fi
+
+  echo "Main menu title not visible yet (attempt $attempt/45)"
+  sleep 2
+done
+
+if [[ "$menu_found" != "1" ]]; then
+  echo "The game process is running, but the main menu title was not detected within 90 seconds"
+  echo "Last OCR output:"
+  cat "$RESULTS_DIR/screen-text.txt" || true
+  exit 1
+fi
 
 echo "Sending basic touch input"
 adb_retry shell input tap 80 400
