@@ -45,15 +45,35 @@ for attempt in $(seq 1 60); do
 done
 [[ "$boot_state" == "1" ]] || { echo "Android did not finish booting"; exit 1; }
 
+echo "Waiting for Android package manager service"
+package_ready=""
+for attempt in $(seq 1 45); do
+  package_status="$(run_with_timeout 10 adb shell service check package 2>&1 || true)"
+  if echo "$package_status" | grep -q "Service package: found"; then
+    if run_with_timeout 20 adb shell cmd package list packages --user 0 >/dev/null 2>&1; then
+      package_ready="1"
+      break
+    fi
+  fi
+  echo "Package manager is not responsive yet (attempt $attempt/45)"
+  sleep 2
+done
+[[ "$package_ready" == "1" ]] || { echo "Android package manager did not become responsive"; exit 1; }
+
 echo "Applying lightweight test display settings"
 adb_retry shell wm size 854x480
 adb_retry logcat -c
 
-echo "Installing APK"
-adb_retry install -r build/YahyaAdventures.apk
+echo "Installing APK without streamed install"
+adb_retry install --no-streaming -r build/YahyaAdventures.apk
 
-echo "Launching game"
-adb_retry shell monkey -p com.yahya.adventures 1
+echo "Launching game directly through Activity Manager"
+run_with_timeout 45 adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -p com.yahya.adventures > "$RESULTS_DIR/launch.txt" 2>&1 || {
+  cat "$RESULTS_DIR/launch.txt"
+  echo "Activity Manager could not launch the game"
+  exit 1
+}
+cat "$RESULTS_DIR/launch.txt"
 
 echo "Waiting for the game process (maximum 60 seconds)"
 game_pid=""
