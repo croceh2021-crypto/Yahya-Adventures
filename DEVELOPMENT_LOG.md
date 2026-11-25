@@ -34,8 +34,9 @@ Primary branch: main
   - Increased initial garden encounters to nine, with three of each type.
 
 ## Existing mobile HUD work
-- `Scripts/mobile_controls_update.gd` and its `Main.tscn` link were prepared in PR #4 on branch `fix/mobile-controls-layout-multitouch-2026-11-25`.
-- PR #4 has not been merged into `main` yet. Reconcile it with the current `main` before treating that HUD change as active.
+- `Scripts/mobile_controls_update.gd` and its `Main.tscn` link were reapplied on top of the latest creature update in PR #5, branch `fix/mobile-hud-after-creatures-2026-11-25`.
+- PR #5 is open and awaits Android build/emulator validation and review; its HUD change is not active on `main` until merged.
+- Superseded PR #4 was closed to avoid merging an outdated branch.
 
 ## Validation status
 - Android export and emulator validation for the current creature/monster changes: **pending GitHub Actions**.
