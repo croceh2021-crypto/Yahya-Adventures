@@ -121,6 +121,9 @@ jobs:
     needs: build-android
     timeout-minutes: 25
     steps:
+      - name: Checkout project scripts
+        uses: actions/checkout@v4
+
       - name: Select emulator acceleration
         shell: bash
         run: |
