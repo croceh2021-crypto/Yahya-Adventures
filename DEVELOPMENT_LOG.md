@@ -32,6 +32,8 @@ Primary branch: main
   - Updated monster and dragon health-bar maximums.
 - `Scripts/adventure_expansion.gd`
   - Increased initial garden encounters to nine, with three of each type.
+- `.github/workflows/android.yml`
+  - Preserve and optimize `moh.png` in the APK because the intro scene loads `res://moh.png` directly; do not rename or remove it during export.
 
 ## Existing mobile HUD work
 - `Scripts/mobile_controls_update.gd` and its `Main.tscn` link were reapplied on top of the latest creature update in PR #5, branch `fix/mobile-hud-after-creatures-2026-11-25`.
