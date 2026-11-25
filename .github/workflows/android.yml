@@ -54,18 +54,12 @@ jobs:
           test -s /tmp/yahya-cover.jpg
           mv /tmp/yahya-cover.jpg IMG_20261124_032029.jpg
 
-          convert moh.png \
-            -strip -resize '1600x1600>' -sampling-factor 4:2:0 \
-            -quality 82 -interlace Plane moh_intro.jpg
-          test -s moh_intro.jpg
-
-          # Keep the original PNG in GitHub, but package only the compact JPEG.
-          rm moh.png
-
-          optipng -o2 Assets/yahya_character.png
+          # The active intro scene loads res://moh.png directly.
+          # Keep the repository image in the APK; optimize it without renaming it.
+          optipng -o2 Assets/yahya_character.png moh.png
 
           echo "Asset sizes after optimization"
-          du -h Audio/* Assets/yahya_character.png moh_intro.jpg
+          du -h Audio/* Assets/yahya_character.png moh.png
 
       - name: Configure Android and export APK
         run: |
