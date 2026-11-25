@@ -51,7 +51,6 @@ Primary branch: main
   - `0aaef16b2d13d31b94b0907579b4bfd015b74ea4`
 
 ## Next steps
-1. Open a fresh PR from `fix/mobile-hud-mainline-2026-11-25` to `main`.
-2. Confirm the latest Android export and emulator smoke test both pass.
-3. Fix any parser, export or runtime failures before merging.
-4. Merge only after validation, then record the merge commit and post-merge workflow result here.
+1. Validate PR #6 from `fix/mobile-hud-mainline-2026-11-25` with Android export and emulator smoke tests.
+2. Fix any parser, export or runtime failures before merging.
+3. Merge PR #6 only after validation, then record the merge commit and post-merge workflow result here.
