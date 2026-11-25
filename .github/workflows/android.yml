@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - fix/mobile-hud-mainline-2026-11-25
       - yahya-3d-preview-test
       - fix/mobile-controls-main-scene-2026-11-25
 
