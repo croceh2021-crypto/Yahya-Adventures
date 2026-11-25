@@ -7,6 +7,7 @@ on:
       - main
       - yahya-3d-preview-test
       - fix/mobile-controls-main-scene-2026-11-25
+      - fix/mobile-hud-after-creatures-2026-11-25
 
   pull_request:
     branches:
