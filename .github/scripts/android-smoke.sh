@@ -112,15 +112,82 @@ if [[ "$menu_found" != "1" ]]; then
   exit 1
 fi
 
-echo "Sending basic touch input"
-adb_retry shell input tap 80 400
-sleep 1
-adb_retry shell input tap 780 400
-sleep 1
-adb_retry shell input tap 427 240
-sleep 2
+echo "TEST 1: Start adventure from the main menu"
+# The verified 854x480 menu places the primary start button at screen center, y=290.
+adb_retry shell input tap 427 290
+sleep 8
+adb_retry shell pidof com.yahya.adventures
+adb_retry exec-out screencap -p > "$RESULTS_DIR/gameplay-start.png"
+test -s "$RESULTS_DIR/gameplay-start.png"
+"$RESULTS_DIR/recognize-screen" "$RESULTS_DIR/gameplay-start.png" > "$RESULTS_DIR/gameplay-text.txt" 2> "$RESULTS_DIR/gameplay-ocr-error.txt" || true
 
-echo "Capturing screen after touch input"
+if grep -E -i "YAHYA[[:space:]]+ADVENTURES" "$RESULTS_DIR/gameplay-text.txt"; then
+  echo "The intro menu is still visible after pressing Start Adventure"
+  exit 1
+fi
+if ! grep -E "العملات|المرحلة|اجمع" "$RESULTS_DIR/gameplay-text.txt"; then
+  echo "Gameplay HUD text was not detected after starting the adventure"
+  cat "$RESULTS_DIR/gameplay-text.txt" || true
+  exit 1
+fi
+echo "PASS: Start button leaves the intro menu and displays gameplay HUD"
+
+echo "TEST 2: Movement control"
+# Hold the right D-pad button briefly, then release.
+adb_retry shell input swipe 780 337 780 337 1200
+sleep 2
+adb_retry exec-out screencap -p > "$RESULTS_DIR/after-movement.png"
+test -s "$RESULTS_DIR/after-movement.png"
+"$RESULTS_DIR/recognize-screen" "$RESULTS_DIR/after-movement.png" > "$RESULTS_DIR/after-movement-text.txt" 2> "$RESULTS_DIR/movement-ocr-error.txt" || true
+if ! grep -E "العملات|المرحلة|اجمع" "$RESULTS_DIR/after-movement-text.txt"; then
+  echo "Gameplay HUD disappeared after movement input"
+  exit 1
+fi
+echo "PASS: Movement input sent and gameplay HUD remained visible"
+
+echo "TEST 3: Jump control"
+adb_retry shell input tap 55 360
+sleep 2
+adb_retry exec-out screencap -p > "$RESULTS_DIR/after-jump.png"
+test -s "$RESULTS_DIR/after-jump.png"
+"$RESULTS_DIR/recognize-screen" "$RESULTS_DIR/after-jump.png" > "$RESULTS_DIR/after-jump-text.txt" 2> "$RESULTS_DIR/jump-ocr-error.txt" || true
+if ! grep -E "العملات|المرحلة|اجمع" "$RESULTS_DIR/after-jump-text.txt"; then
+  echo "Gameplay HUD disappeared after jump input"
+  exit 1
+fi
+echo "PASS: Jump input sent and gameplay HUD remained visible"
+
+echo "TEST 4: Pause menu"
+adb_retry shell input tap 810 40
+sleep 2
+adb_retry exec-out screencap -p > "$RESULTS_DIR/pause-menu.png"
+test -s "$RESULTS_DIR/pause-menu.png"
+"$RESULTS_DIR/recognize-screen" "$RESULTS_DIR/pause-menu.png" > "$RESULTS_DIR/pause-text.txt" 2> "$RESULTS_DIR/pause-ocr-error.txt" || true
+if ! grep -E "اللعبة متوقفة" "$RESULTS_DIR/pause-text.txt"; then
+  echo "Pause menu title was not detected"
+  cat "$RESULTS_DIR/pause-text.txt" || true
+  exit 1
+fi
+echo "PASS: Pause menu appeared"
+
+echo "TEST 5: Resume from pause menu"
+adb_retry shell input tap 427 240
+sleep 3
+adb_retry exec-out screencap -p > "$RESULTS_DIR/resumed-game.png"
+test -s "$RESULTS_DIR/resumed-game.png"
+"$RESULTS_DIR/recognize-screen" "$RESULTS_DIR/resumed-game.png" > "$RESULTS_DIR/resumed-text.txt" 2> "$RESULTS_DIR/resumed-ocr-error.txt" || true
+if grep -E "اللعبة متوقفة" "$RESULTS_DIR/resumed-text.txt"; then
+  echo "Pause overlay is still visible after pressing Resume"
+  exit 1
+fi
+if ! grep -E "العملات|المرحلة|اجمع" "$RESULTS_DIR/resumed-text.txt"; then
+  echo "Gameplay HUD was not restored after resume"
+  cat "$RESULTS_DIR/resumed-text.txt" || true
+  exit 1
+fi
+echo "PASS: Resume restored gameplay HUD"
+
+echo "Capturing final screen after interaction tests"
 adb_retry exec-out screencap -p > "$RESULTS_DIR/game-after-input.png"
 test -s "$RESULTS_DIR/game-after-input.png"
 
