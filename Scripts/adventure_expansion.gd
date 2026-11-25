@@ -290,12 +290,18 @@ func _exp_spawn_initial_enemies() -> void:
 
     exp_spawned = true
 
+    # Nine encounters: three wild dogs, three fire dragons and
+    # three forest monsters, distributed through the garden.
     var positions := [
         Vector3(-12, 0, -28),
         Vector3(12, 0, -36),
         Vector3(-20, 0, -53),
         Vector3(19, 0, -68),
-        Vector3(-8, 0, -82)
+        Vector3(-8, 0, -82),
+        Vector3(8, 0, -47),
+        Vector3(-25, 0, -75),
+        Vector3(24, 0, -90),
+        Vector3(0, 0, -95)
     ]
 
     for i in range(positions.size()):
