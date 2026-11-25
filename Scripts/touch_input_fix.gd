@@ -59,7 +59,16 @@ func _input(event: InputEvent) -> void:
 
 
 func _get_touch_input_root() -> Control:
-    # Menus and modal overlays receive input before the gameplay HUD.
+    # The creature intro is the active first screen in Main.tscn.
+    # It must be checked before the legacy ultimate menu and gameplay HUD.
+    var creature_intro_root := get_node_or_null(
+        "CreatureIntroLayer/CreatureIntroRoot"
+    ) as Control
+
+    if is_instance_valid(creature_intro_root) and creature_intro_root.visible:
+        return creature_intro_root
+
+    # Keep support for the legacy ultimate menu.
     var intro_root := get_node_or_null(
         "UltimateMenuLayer/UltimateRoot"
     ) as Control
