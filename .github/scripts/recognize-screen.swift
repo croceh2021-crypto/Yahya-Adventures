@@ -11,14 +11,23 @@ let imageURL = URL(fileURLWithPath: CommandLine.arguments[1])
 let request = VNRecognizeTextRequest()
 request.recognitionLevel = .accurate
 request.usesLanguageCorrection = false
-request.recognitionLanguages = ["en-US"]
 
 do {
-    let handler = VNImageRequestHandler(url: imageURL, options: [:])
-    try handler.perform([request])
-    for observation in request.results ?? [] {
-        if let candidate = observation.topCandidates(1).first {
-            print(candidate.string)
+    let supported = try request.supportedRecognitionLanguages()
+    let languages = ["en-US", "ar-SA"].filter { supported.contains($0) }
+    guard !languages.isEmpty else {
+        fputs("No supported OCR language was found\n", stderr)
+        exit(1)
+    }
+
+    for language in languages {
+        request.recognitionLanguages = [language]
+        let handler = VNImageRequestHandler(url: imageURL, options: [:])
+        try handler.perform([request])
+        for observation in request.results ?? [] {
+            if let candidate = observation.topCandidates(1).first {
+                print(candidate.string)
+            }
         }
     }
 } catch {
