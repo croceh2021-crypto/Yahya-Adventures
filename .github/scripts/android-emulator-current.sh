@@ -50,7 +50,10 @@ for attempt in $(seq 1 18); do
   adb exec-out screencap -p > "$RESULTS_DIR/intro-screen.png"
   if [[ -s "$RESULTS_DIR/intro-screen.png" ]]; then
     "$RESULTS_DIR/recognize-screen" "$RESULTS_DIR/intro-screen.png" > "$RESULTS_DIR/intro-text.txt" 2>&1 || true
-    if grep -E -i "YAHYA[[:space:]]+ADVENTURES" "$RESULTS_DIR/intro-text.txt"; then
+    # OCR may split the two title words across separate lines.
+    # Normalize line breaks before matching the complete title.
+    tr '\n' ' ' < "$RESULTS_DIR/intro-text.txt" > "$RESULTS_DIR/intro-text-normalized.txt"
+    if grep -E -i "YAHYA[[:space:]]+ADVENTURES" "$RESULTS_DIR/intro-text-normalized.txt"; then
       intro_found=1
       break
     fi
