@@ -274,7 +274,7 @@ func _create_natural_rock(pos: Vector3, index: int) -> void:
 
 func _create_wildflower_cluster(pos: Vector3, index: int) -> void:
     var petal_colors := [Color(0.95, 0.30, 0.34), Color(1.0, 0.78, 0.20), Color(0.78, 0.45, 0.90), Color(0.96, 0.92, 0.78)]
-    var color := petal_colors[index % petal_colors.size()]
+    var color: Color = petal_colors[index % petal_colors.size()]
     for flower in range(3):
         var offset := Vector3((float(flower) - 1.0) * 0.16, 0.0, realism_rng.randf_range(-0.12, 0.12))
         _realism_cylinder(self, "WildflowerStem", 0.014, 0.32, pos + offset + Vector3(0, 0.16, 0), Color(0.12, 0.34, 0.10))
