@@ -7,6 +7,7 @@ on:
       - main
       - yahya-3d-preview-test
       - fix/mobile-controls-main-scene-2026-11-25
+      - feature/100-realistic-3d-world-upgrades
 
   pull_request:
     branches:
@@ -18,6 +19,7 @@ jobs:
   build-android:
     name: Build Android APK
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Download project
@@ -34,7 +36,7 @@ jobs:
         run: |
           mkdir -p build
 
-          docker run --rm \
+          timeout 20m docker run --rm \
             -v "$GITHUB_WORKSPACE:/project" \
             -v "$RUNNER_TEMP/templates.tpz:/tmp/templates.tpz:ro" \
             -w /project \
@@ -111,3 +113,42 @@ jobs:
           name: Yahya-Adventures-APK
           path: build/YahyaAdventures.apk
           if-no-files-found: error
+
+
+  android-emulator-smoke:
+    name: Run APK in Android Emulator
+    runs-on: macos-15-intel
+    needs: build-android
+    timeout-minutes: 35
+    steps:
+      - name: Checkout project scripts
+        uses: actions/checkout@v4
+
+      - name: Download APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Yahya-Adventures-APK
+          path: build
+
+      - name: Verify APK artifact
+        run: |
+          test -s build/YahyaAdventures.apk
+          ls -lh build/YahyaAdventures.apk
+
+      - name: Install, launch, and exercise game
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: default
+          arch: x86_64
+          profile: pixel_2
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-metrics -memory 2048 -cores 2
+          disable-animations: false
+          script: bash .github/scripts/android-smoke.sh
+      - name: Upload emulator test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Yahya-Adventures-Emulator-Test
+          path: test-results/
+          if-no-files-found: warn

@@ -40,6 +40,7 @@ var level_complete := false
 var is_game_paused := false
 var sprint_requested := false
 var sprint_enabled := false
+var smoke_movement_logged := false
 
 var stamina := STAMINA_MAX
 var stamina_visual_state := -1
@@ -678,6 +679,9 @@ func _refresh_move_vector() -> void:
         if combined.length() > 0.0
         else Vector2.ZERO
     )
+    if move_vector.length() > 0.05 and not smoke_movement_logged:
+        smoke_movement_logged = true
+        print("SMOKE_TEST: movement_input_received")
 
 
 func _release_all_controls() -> void:
@@ -749,6 +753,7 @@ func move_player(delta: float) -> void:
 
 func _try_jump() -> void:
     if jump_height <= 0.02:
+        print("SMOKE_TEST: jump_input_received")
         jump_velocity = JUMP_POWER
 
 
@@ -1001,6 +1006,7 @@ func _make_overlay_panel(parent: Control) -> PanelContainer:
 func _open_pause_menu() -> void:
     if level_complete or is_game_paused:
         return
+    print("SMOKE_TEST: pause_menu_opened")
 
     is_game_paused = true
     _release_all_controls()
@@ -1010,6 +1016,7 @@ func _open_pause_menu() -> void:
 
 
 func _resume_game() -> void:
+    print("SMOKE_TEST: game_resumed")
     pause_overlay.visible = false
     is_game_paused = false
 

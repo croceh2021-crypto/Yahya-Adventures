@@ -258,6 +258,7 @@ func _show_intro_screen() -> void:
 
 
 func _start_adventure() -> void:
+    print("SMOKE_TEST: adventure_started")
     intro_visible = false
     guide_visible = false
     achievements_visible = false
