@@ -77,29 +77,53 @@ func _creature_show_intro() -> void:
     center.mouse_filter = Control.MOUSE_FILTER_IGNORE
     creature_intro_root.add_child(center)
 
+    var panel := PanelContainer.new()
+    panel.name = "IntroPanel"
+    panel.custom_minimum_size = Vector2(320, 0)
+    panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+    panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+    var panel_style := StyleBoxFlat.new()
+    panel_style.bg_color = Color(0.015, 0.035, 0.065, 0.84)
+    panel_style.border_color = Color(1.0, 0.76, 0.20, 0.95)
+    panel_style.set_border_width_all(2)
+    panel_style.set_corner_radius_all(24)
+    panel_style.content_margin_left = 22
+    panel_style.content_margin_right = 22
+    panel_style.content_margin_top = 22
+    panel_style.content_margin_bottom = 22
+    panel_style.shadow_color = Color(0, 0, 0, 0.55)
+    panel_style.shadow_size = 14
+    panel_style.shadow_offset = Vector2(0, 5)
+    panel.add_theme_stylebox_override("panel", panel_style)
+    center.add_child(panel)
+
     var column := VBoxContainer.new()
     column.name = "IntroContent"
-    column.custom_minimum_size = Vector2(290, 0)
+    column.custom_minimum_size = Vector2(280, 0)
     column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     column.size_flags_vertical = Control.SIZE_SHRINK_CENTER
     column.alignment = BoxContainer.ALIGNMENT_CENTER
     column.add_theme_constant_override("separation", 14)
-    center.add_child(column)
+    panel.add_child(column)
 
     var english_title := _creature_intro_label(
         "YAHYA ADVENTURES", 31, Color(1.0, 0.82, 0.22)
     )
+    english_title.name = "IntroEnglishTitle"
     column.add_child(english_title)
 
     var arabic_title := _creature_intro_label(
         "مغامرات يحيى", 34, Color.WHITE
     )
+    arabic_title.name = "IntroArabicTitle"
     column.add_child(arabic_title)
 
     var subtitle := _creature_intro_label(
-        "واجه الكلاب الوحشية والتنانين واجمع الكنوز!", 18,
+        "واجه التنانين والوحوش واجمع الكنوز في عالم مفتوح!", 18,
         Color(0.91, 0.95, 1.0)
     )
+    subtitle.name = "IntroSubtitle"
     column.add_child(subtitle)
 
     var start_button := Button.new()
@@ -133,7 +157,84 @@ func _creature_show_intro() -> void:
         "استكشف العالم • قاتل الوحوش • كن البطل", 14,
         Color(0.86, 0.91, 1.0)
     )
+    footer.name = "IntroFooter"
     column.add_child(footer)
+
+    get_viewport().size_changed.connect(_creature_layout_intro)
+    call_deferred("_creature_layout_intro")
+
+
+func _creature_layout_intro() -> void:
+    if not is_instance_valid(creature_intro_root):
+        return
+    if not creature_intro_root.visible:
+        return
+
+    var view_size := get_viewport().get_visible_rect().size
+    if view_size.x < 1.0 or view_size.y < 1.0:
+        return
+
+    var compact := view_size.x < 520.0 or view_size.y < 520.0
+    var panel := creature_intro_root.get_node_or_null(
+        "IntroCenter/IntroPanel"
+    ) as PanelContainer
+    var column := creature_intro_root.get_node_or_null(
+        "IntroCenter/IntroPanel/IntroContent"
+    ) as VBoxContainer
+
+    if is_instance_valid(panel):
+        panel.custom_minimum_size = Vector2(
+            minf(view_size.x * 0.88, 430.0), 0.0
+        )
+
+    if is_instance_valid(column):
+        column.custom_minimum_size = Vector2(
+            minf(view_size.x * 0.80, 380.0), 0.0
+        )
+
+    var english := creature_intro_root.get_node_or_null(
+        "IntroCenter/IntroPanel/IntroContent/IntroEnglishTitle"
+    ) as Label
+    if is_instance_valid(english):
+        english.add_theme_font_size_override(
+            "font_size", 25 if compact else 33
+        )
+
+    var arabic := creature_intro_root.get_node_or_null(
+        "IntroCenter/IntroPanel/IntroContent/IntroArabicTitle"
+    ) as Label
+    if is_instance_valid(arabic):
+        arabic.add_theme_font_size_override(
+            "font_size", 29 if compact else 37
+        )
+
+    var subtitle := creature_intro_root.get_node_or_null(
+        "IntroCenter/IntroPanel/IntroContent/IntroSubtitle"
+    ) as Label
+    if is_instance_valid(subtitle):
+        subtitle.add_theme_font_size_override(
+            "font_size", 14 if compact else 18
+        )
+
+    var footer := creature_intro_root.get_node_or_null(
+        "IntroCenter/IntroPanel/IntroContent/IntroFooter"
+    ) as Label
+    if is_instance_valid(footer):
+        footer.add_theme_font_size_override(
+            "font_size", 12 if compact else 14
+        )
+
+    var start_button := creature_intro_root.get_node_or_null(
+        "IntroCenter/IntroPanel/IntroContent/StartAdventureButton"
+    ) as Button
+    if is_instance_valid(start_button):
+        start_button.custom_minimum_size = Vector2(
+            minf(view_size.x * 0.76, 300.0),
+            clampf(view_size.y * 0.095, 52.0, 66.0)
+        )
+        start_button.add_theme_font_size_override(
+            "font_size", 19 if compact else 23
+        )
 
 
 func _creature_intro_label(
@@ -189,9 +290,40 @@ func _exp_create_enemy(position: Vector3, enemy_type: int) -> void:
     if enemy_type == 1:
         enemy.name = "FireDragon"
         _creature_build_dragon(enemy)
+    elif enemy_type == 2:
+        enemy.name = "ForestMonster"
+        _creature_build_monster(enemy)
     else:
         enemy.name = "WildDog"
-        _creature_build_dog(enemy, enemy_type == 2)
+        _creature_build_dog(enemy, false)
+
+    # Give each creature its own challenge level and visible name.
+    if exp_enemy_list.size() > 0:
+        var creature_data: Dictionary = exp_enemy_list.back()
+        match enemy_type:
+            1:
+                creature_data["health"] = 100.0
+                creature_data["speed"] = 0.95
+                creature_data["damage"] = 14.0
+                creature_data["reward"] = 50
+            2:
+                creature_data["health"] = 125.0
+                creature_data["speed"] = 0.82
+                creature_data["damage"] = 16.0
+                creature_data["reward"] = 60
+        exp_enemy_list[exp_enemy_list.size() - 1] = creature_data
+
+    var health_title := enemy.get_node_or_null(
+        "AdvancedEnemyHealthBar/EnemyHealthText"
+    ) as Label3D
+    if is_instance_valid(health_title):
+        match enemy_type:
+            1:
+                health_title.text = "تنين ناري"
+            2:
+                health_title.text = "وحش الغابة"
+            _:
+                health_title.text = "كلب متوحش"
 
 
 func _creature_material(color: Color, glow: bool = false) -> StandardMaterial3D:
@@ -384,8 +516,111 @@ func _creature_build_dragon(enemy: Node3D) -> void:
 
 
 # ------------------------------------------------------------
-# ENEMY AI - DOGS CHASE, DRAGONS BREATHE FIRE
+# ENEMY AI - DOGS, FIRE DRAGONS AND FOREST MONSTERS
 # ------------------------------------------------------------
+
+
+func _creature_build_monster(monster: Node3D) -> void:
+    var hide_color := Color(0.12, 0.24, 0.15)
+    var armor_color := Color(0.25, 0.36, 0.19)
+    var belly_color := Color(0.42, 0.34, 0.16)
+    var horn_color := Color(0.72, 0.68, 0.43)
+    var eye_color := Color(1.0, 0.20, 0.025)
+
+    _creature_sphere(
+        monster, "MonsterBody", Vector3(0, 0.92, 0),
+        Vector3(1.22, 1.15, 1.18), hide_color
+    )
+    _creature_sphere(
+        monster, "MonsterChest", Vector3(0, 1.02, 0.40),
+        Vector3(0.92, 0.88, 0.70), armor_color
+    )
+    _creature_sphere(
+        monster, "MonsterBelly", Vector3(0, 0.78, 0.66),
+        Vector3(0.62, 0.64, 0.24), belly_color
+    )
+    _creature_sphere(
+        monster, "MonsterHead", Vector3(0, 1.62, 0.48),
+        Vector3(0.86, 0.82, 0.78), hide_color
+    )
+    _creature_sphere(
+        monster, "MonsterJaw", Vector3(0, 1.34, 0.88),
+        Vector3(0.62, 0.34, 0.46), belly_color
+    )
+
+    for side in [-1.0, 1.0]:
+        _creature_sphere(
+            monster, "MonsterEye",
+            Vector3(side * 0.27, 1.72, 0.82),
+            Vector3(0.14, 0.16, 0.09), eye_color
+        )
+
+        var horn_mesh := CylinderMesh.new()
+        horn_mesh.top_radius = 0.015
+        horn_mesh.bottom_radius = 0.16
+        horn_mesh.height = 0.62
+        var horn := _creature_add_mesh(
+            monster, horn_mesh, "MonsterHorn",
+            Vector3(side * 0.34, 2.12, 0.38),
+            Vector3.ONE, horn_color
+        )
+        horn.rotation.z = -side * 0.48
+
+        var arm_pivot := Node3D.new()
+        arm_pivot.name = "MonsterLeftArm" if side < 0.0 else "MonsterRightArm"
+        arm_pivot.position = Vector3(side * 0.70, 1.12, 0.10)
+        monster.add_child(arm_pivot)
+
+        var arm_mesh := CapsuleMesh.new()
+        arm_mesh.radius = 0.20
+        arm_mesh.height = 0.92
+        var arm := _creature_add_mesh(
+            arm_pivot, arm_mesh, "MonsterArm",
+            Vector3(side * 0.08, -0.30, 0.04),
+            Vector3(1.0, 1.0, 1.0), hide_color
+        )
+        arm.rotation.z = side * 0.30
+
+        var claw_mesh := SphereMesh.new()
+        claw_mesh.radius = 0.18
+        claw_mesh.height = 0.30
+        _creature_add_mesh(
+            arm_pivot, claw_mesh, "MonsterClaw",
+            Vector3(side * 0.12, -0.76, 0.14),
+            Vector3(1.0, 0.70, 1.0), horn_color
+        )
+
+        var leg_mesh := CapsuleMesh.new()
+        leg_mesh.radius = 0.17
+        leg_mesh.height = 0.66
+        _creature_add_mesh(
+            monster, leg_mesh, "MonsterLeg",
+            Vector3(side * 0.34, 0.34, 0.20),
+            Vector3.ONE, hide_color
+        )
+
+        var spike_mesh := CylinderMesh.new()
+        spike_mesh.top_radius = 0.0
+        spike_mesh.bottom_radius = 0.12
+        spike_mesh.height = 0.34
+        var spike := _creature_add_mesh(
+            monster, spike_mesh, "MonsterShoulderSpike",
+            Vector3(side * 0.63, 1.72, 0.02),
+            Vector3.ONE, horn_color
+        )
+        spike.rotation.z = -side * 0.25
+
+    # Glowing eyes make the monster readable in the darker garden areas.
+    var core := _creature_sphere(
+        monster, "MonsterCore", Vector3(0, 1.02, 0.78),
+        Vector3(0.18, 0.20, 0.12), Color(0.25, 0.95, 0.25)
+    )
+    var core_material := core.material_override as StandardMaterial3D
+    if core_material != null:
+        core_material.emission_enabled = true
+        core_material.emission = Color(0.12, 0.85, 0.16)
+        core_material.emission_energy_multiplier = 1.8
+
 
 func _exp_update_enemies(delta: float) -> void:
     if not is_instance_valid(player):
@@ -405,7 +640,8 @@ func _exp_update_enemies(delta: float) -> void:
 
         var enemy_type := int(data.get("type", 0))
         var is_dragon := enemy_type == 1
-        var attack_range := 4.8 if is_dragon else 1.5
+        var is_monster := enemy_type == 2
+        var attack_range := 4.8 if is_dragon else (2.15 if is_monster else 1.5)
 
         if distance > attack_range:
             var direction := player.global_position - enemy.global_position
@@ -421,6 +657,9 @@ func _exp_update_enemies(delta: float) -> void:
                 if is_dragon:
                     _creature_dragon_breath(enemy)
                     timer = 2.0
+                elif is_monster:
+                    _creature_monster_slam(enemy)
+                    timer = 1.9
                 else:
                     timer = 1.35
             data["attack_timer"] = timer
@@ -459,6 +698,39 @@ func _creature_dragon_breath(dragon: Node3D) -> void:
     timer.timeout.connect(fire.queue_free)
 
 
+
+
+func _creature_monster_slam(monster: Node3D) -> void:
+    var ring := MeshInstance3D.new()
+    ring.name = "MonsterGroundShockwave"
+    var ring_mesh := CylinderMesh.new()
+    ring_mesh.top_radius = 0.92
+    ring_mesh.bottom_radius = 0.92
+    ring_mesh.height = 0.09
+    ring_mesh.radial_segments = 24
+    ring.mesh = ring_mesh
+
+    var ring_material := StandardMaterial3D.new()
+    ring_material.albedo_color = Color(0.35, 0.88, 0.20, 0.48)
+    ring_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    ring_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    ring.material_override = ring_material
+    ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+    add_child(ring)
+    ring.global_position = monster.global_position + Vector3(0, 0.12, 0)
+    ring.scale = Vector3(0.25, 1.0, 0.25)
+
+    var tween := create_tween()
+    tween.tween_property(
+        ring, "scale", Vector3(2.1, 1.0, 2.1), 0.42
+    ).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+    tween.parallel().tween_property(
+        ring_material, "albedo_color",
+        Color(0.35, 0.88, 0.20, 0.0), 0.42
+    )
+    tween.finished.connect(ring.queue_free)
+
 func _creature_animate_enemies() -> void:
     if is_game_paused or not garden_active:
         return
@@ -468,7 +740,8 @@ func _creature_animate_enemies() -> void:
         if not is_instance_valid(enemy):
             continue
 
-        if int(data.get("type", 0)) == 1:
+        var enemy_type := int(data.get("type", 0))
+        if enemy_type == 1:
             var flap := sin(creature_clock * 8.0) * 0.48
             var left := enemy.get_node_or_null("WingLeft") as Node3D
             var right := enemy.get_node_or_null("WingRight") as Node3D
@@ -476,6 +749,14 @@ func _creature_animate_enemies() -> void:
                 left.rotation.z = 0.45 + flap
             if is_instance_valid(right):
                 right.rotation.z = -0.45 - flap
+        elif enemy_type == 2:
+            var arm_wave := sin(creature_clock * 3.2) * 0.22
+            var left_arm := enemy.get_node_or_null("MonsterLeftArm") as Node3D
+            var right_arm := enemy.get_node_or_null("MonsterRightArm") as Node3D
+            if is_instance_valid(left_arm):
+                left_arm.rotation.z = -0.20 - arm_wave
+            if is_instance_valid(right_arm):
+                right_arm.rotation.z = 0.20 + arm_wave
         else:
             var tail := enemy.get_node_or_null("DogTail") as Node3D
             if is_instance_valid(tail):
