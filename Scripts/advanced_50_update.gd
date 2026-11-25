@@ -318,9 +318,9 @@ func _adv_update_enemy_bars() -> void:
 
         match int(data.get("type", 0)):
             1:
-                maximum_health = 90.0
+                maximum_health = 100.0
             2:
-                maximum_health = 45.0
+                maximum_health = 125.0
 
         var ratio := clampf(
             current_health / maximum_health,
