@@ -171,7 +171,7 @@ fi
 echo "PASS: Pause menu appeared"
 
 echo "TEST 5: Resume from pause menu"
-adb_retry shell input tap 427 240
+adb_retry shell input tap 427 193
 sleep 3
 adb_retry exec-out screencap -p > "$RESULTS_DIR/resumed-game.png"
 test -s "$RESULTS_DIR/resumed-game.png"
