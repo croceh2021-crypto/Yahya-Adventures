@@ -5,7 +5,7 @@ extends "res://Scripts/advanced_50_update.gd"
 # Adds wolves/dogs, dragons with fire breath, and the repository cover image.
 # Existing gameplay systems remain inherited and unchanged.
 
-const CREATURE_INTRO_IMAGE := "res://IMG_20261124_032029.jpg"
+const CREATURE_INTRO_IMAGE := "res://moh_intro.jpg"
 
 var creature_clock := 0.0
 var creature_intro_layer: CanvasLayer
@@ -108,6 +108,9 @@ func _creature_show_intro() -> void:
     start_button.custom_minimum_size = Vector2(270, 62)
     start_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
     start_button.focus_mode = Control.FOCUS_NONE
+    start_button.mouse_filter = Control.MOUSE_FILTER_STOP
+    start_button.process_mode = Node.PROCESS_MODE_ALWAYS
+    start_button.disabled = false
     start_button.add_theme_font_size_override("font_size", 23)
     start_button.add_theme_color_override("font_color", Color.WHITE)
 
@@ -153,6 +156,9 @@ func _creature_intro_label(
 
 
 func _creature_start_adventure() -> void:
+    if not is_instance_valid(creature_intro_layer):
+        return
+
     is_game_paused = false
     if is_instance_valid(creature_intro_layer):
         creature_intro_layer.queue_free()

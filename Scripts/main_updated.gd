@@ -115,14 +115,20 @@ func _input(event: InputEvent) -> void:
 
         var target: Button = null
 
-        # FIXED: Ultimate menu belongs to the child script.
-        # Access it through its actual scene path.
-        var intro_root := get_node_or_null(
+        # Route touch input to the creature intro first, so Start works
+        # reliably while the scene tree is paused.
+        var creature_intro_root := get_node_or_null(
+            "CreatureIntroLayer/CreatureIntroRoot"
+        ) as Control
+
+        var ultimate_intro_root := get_node_or_null(
             "UltimateMenuLayer/UltimateRoot"
         ) as Control
 
-        if is_instance_valid(intro_root) and intro_root.visible:
-            target = _find_touch_button(intro_root, touch.position)
+        if is_instance_valid(creature_intro_root) and creature_intro_root.visible:
+            target = _find_touch_button(creature_intro_root, touch.position)
+        elif is_instance_valid(ultimate_intro_root) and ultimate_intro_root.visible:
+            target = _find_touch_button(ultimate_intro_root, touch.position)
 
         elif is_instance_valid(complete_overlay) and complete_overlay.visible:
             target = _find_touch_button(complete_overlay, touch.position)
