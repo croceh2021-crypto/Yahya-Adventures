@@ -30,6 +30,35 @@ jobs:
             -o "$RUNNER_TEMP/templates.tpz"
           test -s "$RUNNER_TEMP/templates.tpz"
 
+      - name: Optimize audio and image assets for smaller APK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg imagemagick optipng
+
+          echo "Asset sizes before optimization"
+          du -h Audio/* Assets/yahya_character.png IMG_20261124_032029.jpg
+
+          for file in Audio/*.mp3; do
+            [ -f "$file" ] || continue
+            temp="${file%.mp3}.optimized.mp3"
+            ffmpeg -hide_banner -loglevel error -y -i "$file" \
+              -map 0:a:0 -map_metadata 0 -codec:a libmp3lame \
+              -b:a 128k -ar 44100 -ac 2 "$temp"
+            test -s "$temp"
+            mv "$temp" "$file"
+          done
+
+          convert IMG_20261124_032029.jpg \
+            -strip -resize '1600x1600>' -sampling-factor 4:2:0 \
+            -quality 84 -interlace Plane /tmp/yahya-cover.jpg
+          test -s /tmp/yahya-cover.jpg
+          mv /tmp/yahya-cover.jpg IMG_20261124_032029.jpg
+
+          optipng -o2 Assets/yahya_character.png
+
+          echo "Asset sizes after optimization"
+          du -h Audio/* Assets/yahya_character.png IMG_20261124_032029.jpg
+
       - name: Configure Android and export APK
         run: |
           mkdir -p build
