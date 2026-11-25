@@ -515,3 +515,20 @@ func _refresh_move_vector() -> void:
                 combined += Vector2(1.0, 0.0)
 
     move_vector = combined.normalized() if combined.length() > 0.0 else Vector2.ZERO
+
+
+# ------------------------------------------------------------
+# SINGLE INTRO SCREEN
+# Disable the inherited legacy menu. The only visible intro is the
+# moh.png screen created by _creature_show_intro().
+# ------------------------------------------------------------
+
+func _create_ultimate_interface() -> void:
+    ultimate_layer = null
+    ultimate_root = null
+
+
+func _show_intro_screen() -> void:
+    intro_visible = false
+    guide_visible = false
+    achievements_visible = false
